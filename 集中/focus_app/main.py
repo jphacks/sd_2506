@@ -18,7 +18,7 @@ def calculate_EAR(eye_landmarks):
     A = np.linalg.norm(eye_landmarks[1] - eye_landmarks[5])
     B = np.linalg.norm(eye_landmarks[2] - eye_landmarks[4])
     C = np.linalg.norm(eye_landmarks[0] - eye_landmarks[3])
-    print('debug1')
+    print('debug1',end=' + ')
     return (A + B) / (2.0 * C)
 
 #　目が閉じているかどうかを判断
@@ -36,11 +36,11 @@ def calculate_focus_score(landmarks):
         if eye_closed_start_time is None:
             eye_closed_start_time = time.time()
         duration = time.time() - eye_closed_start_time
-        score -= min(50, int((duration / 10.0) * 50))
+        score -= min(50, int((duration / 5.0) * 50))
     else:
         eye_closed_start_time = None
 
-    print('debug2')
+    print('debug2',end=' + ')
     return max(score, 0)
 
 
@@ -104,7 +104,7 @@ def index():
         image_data = data.get('image')
         imd = decode_base64_image(image_data)
         gen_frames(imd)
-        if score_data['score'] >= 60:
+        if score_data['score'] >= 70:
             result = {'focus':'focused'}
         else:
             result = {'focus':'unfocused'}

@@ -396,15 +396,23 @@ function captureAndSend() {
     
     console.log('📸 キャプチャ実行中');
     
-    // デモ用：30%の確率で状態変更
-    /*if (Math.random() > 0.7) {
-        const demoResult = {
-            focus: Math.random() > 0.5 ? 'focused' : 'unfocused',
-            confidence: Math.random()
-        };
-        console.log('🎮 デモ用状態変更:', demoResult);
-        updateFocusStatus(demoResult);
-    }*/
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/jpeg');
+
+    fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData })
+    })
+    .then(res => res.json())
+    .then(data => updateFocusStatus(data))
+    .catch(err => {
+        console.log('分析サーバーに接続できません:', err);
+    });
 }
 const intervalId = setInterval(captureAndSend, 500);
 // ========================================
