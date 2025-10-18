@@ -225,4 +225,3 @@ def index():
             result = {'focus':'unfocused'}
         return jsonify(result)
     return render_template('index_coolver.html')
-

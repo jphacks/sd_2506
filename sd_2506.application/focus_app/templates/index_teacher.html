@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集中力モニタリング - 先生用</title>
+    
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- CSS -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style_teacher.css') }}"> -->
+     <link rel="stylesheet" href="C:/Users/suzuk/OneDrive/Documents/GitHub/sd_2506/sd_2506.application/focus_app/static/css/stle_teacher.css">
+    
+    <!-- PWA -->
+    <!-- <link rel="manifest" href="manifest_coolver.json">
+    <meta name="theme-color" content="#6366f1"> -->
+</head>
+
+<body>
+
+    <!-- トップバー -->
+    <header class="top-bar">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="dashboard-title">
+                    <span class="material-icons me-2">school</span>
+                    先生用ダッシュボード
+                </h1>
+                <div class="top-bar-right">
+                    <div class="teacher-info">
+                        <span class="material-icons">account_circle</span>
+                        <span>山田 太郎 先生</span>
+                    </div>
+                    <button class="btn-icon" id="btn-notification">
+                        <span class="material-icons">notifications</span>
+                        <span class="notification-badge" id="notification-count">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="container-fluid h-100">
+            <div class="row h-100">
+                
+                <!-- 左半分：生徒一覧 -->
+                <div class="col-md-6 left-panel">
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <h2>
+                                <span class="material-icons me-2">group</span>
+                                生徒一覧
+                            </h2>
+                            <div class="stats-summary">
+                                <span class="stat-item">
+                                    <span class="material-icons">person</span>
+                                    接続中: <strong id="online-count">0</strong>
+                                </span>
+                                <span class="stat-item">
+                                    <span class="material-icons text-danger">warning</span>
+                                    要注意: <strong id="alert-count">0</strong>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="students-list" id="students-list">
+                            <!-- 生徒カードが動的に追加される -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右半分：選択した生徒の詳細 -->
+                <div class="col-md-6 right-panel">
+                    <div class="panel-card">
+                        <div id="no-selection" class="no-selection">
+                            <span class="material-icons">touch_app</span>
+                            <p>左側から生徒を選択してください</p>
+                        </div>
+                        
+                        <div id="student-detail" class="student-detail d-none">
+                            <!-- 生徒ヘッダー -->
+                            <div class="detail-header">
+                                <div class="student-avatar-large">
+                                    <span class="material-icons">account_circle</span>
+                                </div>
+                                <div class="student-info-header">
+                                    <h3 id="detail-name">生徒名</h3>
+                                    <div class="login-status">
+                                        <span class="material-icons" id="detail-status-icon">check_circle</span>
+                                        <span id="detail-status-text">オンライン</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ログイン情報 -->
+                            <div class="info-section">
+                                <h4>
+                                    <span class="material-icons">schedule</span>
+                                    セッション情報
+                                </h4>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>ログイン時刻</label>
+                                        <span id="detail-login-time">--:--</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>ログアウト時刻</label>
+                                        <span id="detail-logout-time">--:--</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>生徒ID</label>
+                                        <span id="detail-student-id">---</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 集中時間データ -->
+                            <div class="info-section">
+                                <h4>
+                                    <span class="material-icons">timer</span>
+                                    集中時間データ
+                                </h4>
+                                <div class="time-metrics">
+                                    <div class="metric-card metric-success">
+                                        <div class="metric-icon">
+                                            <span class="material-icons">check_circle</span>
+                                        </div>
+                                        <div class="metric-content">
+                                            <label>集中時間</label>
+                                            <div class="metric-value" id="detail-focus-time">0分</div>
+                                        </div>
+                                    </div>
+                                    <div class="metric-card metric-warning">
+                                        <div class="metric-icon">
+                                            <span class="material-icons">warning</span>
+                                        </div>
+                                        <div class="metric-content">
+                                            <label>非集中時間</label>
+                                            <div class="metric-value" id="detail-unfocus-time">0分</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress-section">
+                                    <label>集中割合</label>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" id="detail-focus-percentage" role="progressbar" style="width: 0%">0%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- タグとメモ -->
+                            <div class="info-section">
+                                <h4>
+                                    <span class="material-icons">label</span>
+                                    タグ・メモ
+                                </h4>
+                                <div class="tags-container" id="detail-tags">
+                                    <span class="tag-badge">タグなし</span>
+                                </div>
+                                <div class="memo-container">
+                                    <label>メモ</label>
+                                    <p id="detail-memo" class="memo-text">メモがありません</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 過去の履歴 -->
+                            <div class="info-section">
+                                <h4>
+                                    <span class="material-icons">history</span>
+                                    過去のセッション履歴
+                                </h4>
+                                <div class="history-list" id="detail-history">
+                                    <p class="text-muted">履歴がありません</p>
+                                </div>
+                            </div>
+                            
+                            <!-- アクションボタン -->
+                            <div class="action-buttons">
+                                <button class="btn-action btn-dismiss" id="btn-dismiss-alert">
+                                    <span class="material-icons">notifications_off</span>
+                                    通知をスルー
+                                </button>
+                                <button class="btn-action btn-message" id="btn-send-message">
+                                    <span class="material-icons">send</span>
+                                    メッセージ送信
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </main>
+
+    <!-- 通知トースト -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notification-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-warning">
+                <span class="material-icons me-2">warning</span>
+                <strong class="me-auto">注意が必要</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-message">
+                通知メッセージ
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    
+    <!-- JS -->
+    <!-- <script src="{{ url_for('static', filename='js/main_teacher.js') }}"></script> -->
+     <script src="C:/Users/suzuk/OneDrive/Documents/GitHub/sd_2506/sd_2506.application/focus_app/static/js/main_teacher.js"></script>
+</body>
+</html>
