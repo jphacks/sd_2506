@@ -1,176 +1,208 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>集中力モニタリング - Cool Version</title>
+    <title>集中力モニタリング - 生徒用</title>
     
     <!-- Bootstrap 5.3 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_coolver.css')}}">
+    <!-- CSS -->
+    <link rel="stylesheet" href="style_coolver.css">
     
     <!-- PWA -->
     <link rel="manifest" href="manifest_coolver.json">
     <meta name="theme-color" content="#6366f1">
 </head>
+
 <body>
-    <div class="container-fluid">
-        <div class="main-card p-4">
+    <div class="app-layout">
+        
+        <!-- 左サイドバー（メニュー） -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3 class="sidebar-title">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    学習モニター
+                </h3>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" id="nav-main">
+                    <i class="fas fa-home"></i>
+                    <span>ホーム</span>
+                </a>
+                <a href="#" class="nav-item" id="nav-history">
+                    <i class="fas fa-history"></i>
+                    <span>履歴</span>
+                </a>
+                <a href="#" class="nav-item" id="nav-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>設定</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-divider"></div>
+            
+            <div class="sidebar-section">
+                <h4 class="section-title">
+                    <i class="fas fa-coffee me-2"></i>
+                    リフレッシュ
+                </h4>
+                <button class="sidebar-btn" id="btn-game">
+                    <i class="fas fa-gamepad me-2"></i>
+                    神経衰弱
+                </button>
+                <button class="sidebar-btn" id="btn-break">
+                    <i class="fas fa-clock me-2"></i>
+                    休憩タイマー
+                </button>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>ゲストユーザー</span>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- メインコンテンツ -->
+        <main class="main-content-wrapper">
             
             <!-- メイン画面 -->
             <div id="main-screen" class="screen">
-                <div class="row g-4">
+                <div class="main-grid">
                     
-                    <!-- 左サイドバー -->
-                    <div class="col-lg-3">
+                    <!-- 左エリア：カメラ＆ステータス -->
+                    <div class="left-area">
                         
-                        <!-- 成長表示 -->
-                        <div class="section-card mb-3">
-                            <h3 class="section-title">
-                                <i class="fas fa-seedling"></i>
-                                成長
-                            </h3>
-                            <div id="growth-area" class="growth-display">
-                                <div class="growth-icon">🌱</div>
-                                <div class="growth-level">レベル 0</div>
+                        <!-- 集中状態表示（上部） -->
+                        <div class="status-card">
+                            <div class="status-header">
+                                <h3>現在の状態</h3>
+                            </div>
+                            <div id="focus-status-display" class="status-display">
+                                <!-- <div class="status-icon-wrapper">
+                                    <div id="status-icon-main" class="status-icon-main">⏳</div>
+                                </div> -->
+                                <div id="status-text-main" class="status-text-main">分析待機中</div>
+                                <div id="status-subtext-main" class="status-subtext-main">カメラを起動してください</div>
+                            </div>
+                            
+                            <!-- タイマー表示 -->
+                            <div class="timer-display">
+                                <div class="timer-item timer-focus">
+                                    <div class="timer-label">集中時間</div>
+                                    <div id="timer-focus-display" class="timer-value">0分0秒</div>
+                                </div>
+                                <div class="timer-item timer-unfocus">
+                                    <div class="timer-label">非集中時間</div>
+                                    <div id="timer-unfocus-display" class="timer-value">0分0秒</div>
+                                </div>
                             </div>
                         </div>
-                        
-                        <!-- メニュー -->
-                        <div class="section-card">
-                            <h3 class="section-title">
-                                <i class="fas fa-bars"></i>
-                                メニュー
-                            </h3>
-                            <button class="btn-action" id="btn-history">
-                                <i class="fas fa-history"></i>
-                                <div>履歴</div>
-                            </button>
-                            <button class="btn-action" id="btn-settings">
-                                <i class="fas fa-cog"></i>
-                                <div>設定</div>
-                            </button>
-                        </div>
-                        
-                    </div>
-                    
-                    <!-- 中央エリア -->
-                    <div class="col-lg-6">
                         
                         <!-- カメラ表示 -->
-                        <div class="camera-container">
-                            <video id="camera" autoplay playsinline muted></video>
-                            <div class="camera-overlay" id="camera-overlay">
-                                <div class="text-center">
-                                    <div class="spinner-border text-light mb-3" role="status"></div>
-                                    <p id="camera-overlay-text">カメラ起動中...</p>
+                        <div class="camera-card">
+                            <div class="camera-container">
+                                <video id="camera" autoplay playsinline muted></video>
+                                <div class="camera-overlay" id="camera-overlay">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-light mb-3" role="status"></div>
+                                        <p id="camera-overlay-text">カメラ起動中...</p>
+                                    </div>
                                 </div>
+                                <div class="status-badge status-waiting" id="status-badge">待機中</div>
                             </div>
-                            <div class="status-badge status-waiting" id="status-badge">待機中</div>
-                        </div>
-                        
-                        <!-- カメラコントロール -->
-                        <div class="text-center mb-3">
-                            <button id="camera-toggle" class="btn btn-lg btn-primary-custom">
-                                <i class="fas fa-video me-2"></i>カメラON
-                            </button>
-                        </div>
-                        
-                        <!-- メトリクス -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-4">
-                                <div class="metric-box">
-                                    <div id="metric-score" class="metric-value">100</div>
-                                    <div class="metric-label">スコア</div>
-                                </div>
+                            
+                            <!-- カメラコントロール -->
+                            <div class="camera-controls">
+                                <button id="camera-toggle" class="btn-camera-control">
+                                    <i class="fas fa-video me-2"></i>カメラON
+                                </button>
                             </div>
-                            <div class="col-4">
-                                <div class="metric-box metric-box-success">
-                                    <div id="metric-focus-time" class="metric-value">0秒</div>
-                                    <div class="metric-label">集中</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="metric-box metric-box-warning">
-                                    <div id="metric-unfocus-time" class="metric-value">0秒</div>
-                                    <div class="metric-label">非集中</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 状態表示 -->
-                        <div id="focus-status" class="section-card text-center">
-                            <div id="status-icon" class="status-icon-large">⏳</div>
-                            <div id="status-text" class="status-text">分析待機中</div>
-                            <div id="status-subtext" class="status-subtext">カメラを起動してください</div>
                         </div>
                         
                         <!-- 集中が切れた時の提案 -->
-                        <div id="break-or-game" class="card border-warning d-none mt-3">
-                            <div class="card-body text-center">
-                                <h6 class="text-warning fw-bold mb-3">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    集中が切れています
-                                </h6>
-                                <p class="text-muted mb-3">リフレッシュしませんか？</p>
-                                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                                    <button id="manual-game" class="btn btn-orange rounded-pill px-4">
-                                        <i class="fas fa-gamepad me-2"></i>神経衰弱
-                                    </button>
-                                    <button id="manual-break" class="btn btn-blue rounded-pill px-4">
-                                        <i class="fas fa-coffee me-2"></i>休憩
-                                    </button>
-                                </div>
+                        <div id="break-or-game" class="alert-card d-none">
+                            <div class="alert-icon">⚠️</div>
+                            <h4>集中が切れています</h4>
+                            <p>リフレッシュしませんか？</p>
+                            <div class="alert-actions">
+                                <button id="manual-game" class="btn-alert-action">
+                                    <i class="fas fa-gamepad me-2"></i>ゲーム
+                                </button>
+                                <button id="manual-break" class="btn-alert-action">
+                                    <i class="fas fa-coffee me-2"></i>休憩
+                                </button>
                             </div>
                         </div>
                         
                     </div>
                     
-                    <!-- 右サイドバー -->
-                    <div class="col-lg-3">
+                    <!-- 右エリア：成長表示 -->
+                    <div class="right-area">
                         
-                        <!-- リフレッシュ -->
-                        <div class="section-card mb-3">
-                            <h3 class="section-title">
-                                <i class="fas fa-coffee"></i>
-                                リフレッシュ
-                            </h3>
-                            <button class="btn-action" id="btn-game">
-                                <i class="fas fa-gamepad"></i>
-                                <div>神経衰弱</div>
-                            </button>
-                            <button class="btn-action" id="btn-break">
-                                <i class="fas fa-clock"></i>
-                                <div>休憩タイマー</div>
-                            </button>
+                        <!-- 成長カード -->
+                        <div class="growth-card">
+                            <div class="growth-header">
+                                <h3>
+                                    <i class="fas fa-seedling me-2"></i>
+                                    成長レベル
+                                </h3>
+                            </div>
+                            <div id="growth-area" class="growth-display-area">
+                                <div class="growth-icon-large">🌱</div>
+                                <div class="growth-level-text">レベル 0</div>
+                                <div class="growth-description">集中時間を積み重ねて成長させよう！</div>
+                            </div>
+                            
+                            <!-- プログレスバー -->
+                            <div class="growth-progress">
+                                <div class="progress-label">次のレベルまで</div>
+                                <div class="progress">
+                                    <div id="growth-progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
+                                </div>
+                            </div>
                         </div>
                         
+                        <!-- スコア表示
+                        <div class="score-card">
+                            <h4>
+                                <i class="fas fa-star me-2"></i>
+                                現在のスコア
+                            </h4>
+                            <div id="current-score-display" class="score-value">100</div>
+                            <div class="score-description">集中状態を維持しよう</div>
+                        </div> -->
+                        
                         <!-- セッション記録 -->
-                        <div class="section-card">
-                            <h3 class="section-title">
-                                <i class="fas fa-save"></i>
-                                記録
-                            </h3>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">タグ</label>
-                                <input type="text" id="input-tags" class="form-control" placeholder="#勉強, #朝活">
+                        <div class="session-card">
+                            <h4>
+                                <i class="fas fa-save me-2"></i>
+                                今日の記録
+                            </h4>
+                            <div class="session-form">
+                                <div class="form-group-compact">
+                                    <label>タグ</label>
+                                    <input type="text" id="input-tags" class="form-control form-control-sm" placeholder="#勉強, #数学">
+                                </div>
+                                <div class="form-group-compact">
+                                    <label>メモ</label>
+                                    <textarea id="input-memo" class="form-control form-control-sm" rows="2" placeholder="振り返り..."></textarea>
+                                </div>
+                                <button id="save-session" class="btn-save-session">
+                                    <i class="fas fa-check me-2"></i>保存
+                                </button>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">メモ</label>
-                                <textarea id="input-memo" class="form-control" rows="3" placeholder="振り返り..."></textarea>
-                            </div>
-                            <button id="save-session" class="btn btn-primary-custom w-100">
-                                <i class="fas fa-check me-2"></i>保存
-                            </button>
                         </div>
                         
                     </div>
@@ -180,172 +212,167 @@
             
             <!-- 神経衰弱ゲーム画面 -->
             <div id="memory-game-screen" class="screen d-none">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="screen-header">
                     <h2><i class="fas fa-gamepad me-2"></i>神経衰弱ゲーム</h2>
                     <button id="back-main-from-game" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-2"></i>戻る
                     </button>
                 </div>
-                <div id="memory-game"></div>
+                <div id="memory-game" class="game-container"></div>
             </div>
             
             <!-- 休憩タイマー画面 -->
             <div id="break-timer-screen" class="screen d-none">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="screen-header">
                     <h2><i class="fas fa-clock me-2"></i>休憩タイマー</h2>
                     <button id="back-main-from-break" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-2"></i>戻る
                     </button>
                 </div>
-                <div class="row justify-content-center">
-                    <div class="col-md-6">
-                        <div class="section-card">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">休憩時間</label>
-                                <div class="row g-2">
-                                    <div class="col-4">
-                                        <input type="number" id="break-hour" class="form-control" value="0" min="0" max="2">
-                                        <small class="text-muted">時</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <input type="number" id="break-min" class="form-control" value="5" min="0" max="59">
-                                        <small class="text-muted">分</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <input type="number" id="break-sec" class="form-control" value="0" min="0" max="59">
-                                        <small class="text-muted">秒</small>
-                                    </div>
+                <div class="timer-setup-container">
+                    <div class="timer-setup-card">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">休憩時間</label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="number" id="break-hour" class="form-control" value="0" min="0" max="2">
+                                    <small class="text-muted">時</small>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" id="break-min" class="form-control" value="5" min="0" max="59">
+                                    <small class="text-muted">分</small>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" id="break-sec" class="form-control" value="0" min="0" max="59">
+                                    <small class="text-muted">秒</small>
                                 </div>
                             </div>
-                            <button id="start-break-timer" class="btn btn-primary-custom w-100 mb-3">
-                                <i class="fas fa-play me-2"></i>休憩開始
-                            </button>
-                            <div id="break-timer"></div>
                         </div>
+                        <button id="start-break-timer" class="btn btn-primary-custom w-100 mb-3">
+                            <i class="fas fa-play me-2"></i>休憩開始
+                        </button>
+                        <div id="break-timer"></div>
                     </div>
                 </div>
             </div>
             
             <!-- 履歴画面 -->
             <div id="history-screen" class="screen d-none">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="screen-header">
                     <h2><i class="fas fa-history me-2"></i>集中履歴</h2>
                     <button id="back-main-from-history" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-2"></i>戻る
                     </button>
                 </div>
-                <div class="section-card mb-3">
-                    <h4 class="mb-3">
-                        <i class="fas fa-robot me-2"></i>AI分析結果
-                    </h4>
-                    <div id="ai-feedback" class="alert alert-info">分析中...</div>
-                </div>
-                <div class="section-card">
-                    <h4 class="mb-3">
-                        <i class="fas fa-table me-2"></i>セッション履歴
-                    </h4>
-                    <div id="history-list"></div>
+                <div class="history-container">
+                    <div class="section-card mb-3">
+                        <h4 class="mb-3">
+                            <i class="fas fa-robot me-2"></i>AI分析結果
+                        </h4>
+                        <div id="ai-feedback" class="alert alert-info">分析中...</div>
+                    </div>
+                    <div class="section-card">
+                        <h4 class="mb-3">
+                            <i class="fas fa-table me-2"></i>セッション履歴
+                        </h4>
+                        <div id="history-list"></div>
+                    </div>
                 </div>
             </div>
             
             <!-- 設定画面 -->
             <div id="settings-screen" class="screen d-none">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="screen-header">
                     <h2><i class="fas fa-cog me-2"></i>設定</h2>
                     <button id="back-main-from-settings" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-2"></i>戻る
                     </button>
                 </div>
                 
-                <!-- BGMアラート表示エリア -->
-                <div id="bgm-alert-area" class="mb-3"></div>
-                
-                <!-- 通知設定 -->
-                <div class="section-card mb-3">
-                    <h4 class="mb-3">
-                        <i class="fas fa-bell me-2"></i>通知設定
-                    </h4>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="enable-notify" checked>
-                        <label class="form-check-label fw-bold" for="enable-notify">
-                            デスクトップ通知を有効にする
-                        </label>
+                <div class="settings-container">
+                    
+                    <!-- BGMアラート表示エリア -->
+                    <div id="bgm-alert-area" class="mb-3"></div>
+                    
+                    <!-- 通知設定 -->
+                    <div class="section-card mb-3">
+                        <h4 class="mb-3">
+                            <i class="fas fa-bell me-2"></i>通知設定
+                        </h4>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="enable-notify" checked>
+                            <label class="form-check-label fw-bold" for="enable-notify">
+                                デスクトップ通知を有効にする
+                            </label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">通知メッセージ</label>
+                            <input id="notify-msg" type="text" class="form-control" 
+                                   value="集中時間をチェックしませんか？" maxlength="50">
+                        </div>
+                        <div id="notification-status"></div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">通知メッセージ</label>
-                        <input id="notify-msg" type="text" class="form-control" 
-                               value="集中時間をチェックしませんか？" maxlength="50">
-                    </div>
-                    <div id="notification-status"></div>
-                </div>
-                
-                <!-- BGM設定 -->
-                <div class="section-card mb-3">
-                    <h4 class="mb-3">
-                        <i class="fas fa-music me-2"></i>BGM設定
-                    </h4>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="enable-bgm">
-                        <label class="form-check-label fw-bold" for="enable-bgm">
-                            BGMを有効にする
-                        </label>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">BGM選択</label>
-                        <select id="bgm-select" class="form-select">
-                            <option value="none">なし</option>
-                            <option value="relax" selected>リラックス音楽</option>
-                            <option value="cafe">カフェの音</option>
-                            <option value="rain">雨音</option>
-                        </select>
-                    </div>
-                    <button id="test-bgm" class="btn btn-success w-100">
-                        <i class="fas fa-play me-2"></i>BGMをテスト再生
-                    </button>
-                </div>
-                
-                <!-- 通知テスト -->
-                <div class="section-card">
-                    <h4 class="mb-3">
-                        <i class="fas fa-bell-slash me-2"></i>通知機能テスト
-                    </h4>
-                    <div class="d-grid gap-2">
-                        <button id="request-notification-permission" class="btn btn-primary">
-                            <i class="fas fa-bell me-2"></i>通知許可を要求
+                    
+                    <!-- BGM設定 -->
+                    <div class="section-card mb-3">
+                        <h4 class="mb-3">
+                            <i class="fas fa-music me-2"></i>BGM設定
+                        </h4>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="enable-bgm">
+                            <label class="form-check-label fw-bold" for="enable-bgm">
+                                BGMを有効にする
+                            </label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">BGM選択</label>
+                            <select id="bgm-select" class="form-select">
+                                <option value="none">なし</option>
+                                <option value="relax" selected>リラックス音楽</option>
+                                <option value="cafe">カフェの音</option>
+                                <option value="rain">雨音</option>
+                            </select>
+                        </div>
+                        <button id="test-bgm" class="btn btn-success w-100">
+                            <i class="fas fa-play me-2"></i>BGMをテスト再生
                         </button>
-                        <button id="test-basic-notification" class="btn btn-success">
-                            <i class="fas fa-comment-dots me-2"></i>基本通知テスト
-                        </button>
-                        <button id="test-sw-notification" class="btn btn-info">
-                            <i class="fas fa-satellite-dish me-2"></i>バックグラウンド通知テスト
-                        </button>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <button id="start-periodic-notifications" class="btn btn-warning btn-sm w-100">
-                                    <i class="fas fa-play me-1"></i>定期通知開始
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button id="stop-periodic-notifications" class="btn btn-secondary btn-sm w-100">
-                                    <i class="fas fa-stop me-1"></i>定期通知停止
-                                </button>
-                            </div>
+                    </div>
+                    
+                    <!-- 通知テスト -->
+                    <div class="section-card">
+                        <h4 class="mb-3">
+                            <i class="fas fa-vial me-2"></i>通知機能テスト
+                        </h4>
+                        <div class="d-grid gap-2">
+                            <button id="request-notification-permission" class="btn btn-primary">
+                                <i class="fas fa-bell me-2"></i>通知許可を要求
+                            </button>
+
+                            <!-- テスト用 -->
+                            <button id="test-basic-notification" class="btn btn-success">
+                                <i class="fas fa-comment-dots me-2"></i>基本通知テスト
+                            </button>
+                            <button id="test-sw-notification" class="btn btn-info">
+                                <i class="fas fa-satellite-dish me-2"></i>バックグラウンド通知テスト
+                            </button>
+                            <!-- テスト用 -->
                         </div>
                     </div>
+                    
                 </div>
-                
             </div>
             
-        </div>
+        </main>
+        
     </div>
     
     <!-- Audio Element -->
     <audio id="bgm-audio" loop preload="none"></audio>
     
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     
-    <!-- Main Script -->
-    <script src="{{ url_for('static', filename='javascript/main_coolver.js')}}"></script>
+    <!-- JS -->
+    <script src="main_coolver.js"></script>
 </body>
 </html>
