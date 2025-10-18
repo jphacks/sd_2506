@@ -14,6 +14,10 @@ eye_closed_start_time = None
 gaze_away_start_time = None
 face_missing_start_time = None
 
+# 先生専用のID・パスワード（環境変数や設定ファイルで管理することを推奨）
+TEACHER_USERNAME = "teacher_admin"
+TEACHER_PASSWORD = "teacher_pass_2025"
+
 # 初期リダイレクト先
 redirect_target = {"url": "http://localhost:5000/index_coolver"}
 
@@ -22,25 +26,26 @@ def table_create(db_filename):
     with sqlite3.connect(db_filename) as conn:
         cursor = conn.cursor()
         
-        # テーブル作成クエリ
+        # 生徒用テーブル作成クエリ
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                password TEXT NOT NULL
+                password TEXT NOT NULL,
+                user_type TEXT DEFAULT 'student'
             )
         """)
 
 # データベースに挿入(ログイン)
-def database_insert(db_filename,name,password):
+def database_insert(db_filename,name,password,user_type='student'):
     with sqlite3.connect(db_filename) as conn:
         cursor = conn.cursor()
     
         # データの挿入（? プレースホルダでSQLインジェクション対策）
         cursor.execute("""
             INSERT INTO users (name, password)
-            VALUES (?, ?)
-        """, (name, password))
+            VALUES (?, ?, ? )
+        """, (name, password,user_type))
         result = cursor.fetchone()
         return result
 
@@ -52,7 +57,7 @@ def login_process(db_filename,name, password):
 
             # nameとpasswordが一致するレコードを検索
             cursor.execute("""
-                SELECT * FROM users
+                SELECT user_id, name, user_type FROM users
                 WHERE name = ? AND password = ?
             """, (name, password))
 
@@ -166,14 +171,32 @@ def login():
     
     username=None
     password = None
+    error_message = None
+
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
+
+        if username == TEACHER_USERNAME and password == TEACHER_PASSWORD:
+            session['user_type'] = 'teacher'
+            session['username'] = username
+
+            return redirect('/index_teacher', code=302)
+        
+        #生徒ログイン用
         judgment=login_process(db_filename,username, password)
         if judgment:
-            return redirect(redirect_target["url"], code=302)
+            user_id, user_name, user_type = judgment
+            session['user_type'] = 'student'
+            session['user_id'] = user_id
+            session['username'] = user_name
+
+            return redirect('/index_coolver', code=302)
+        else:
+            error_message = "ユーザー名またはパスワードが間違っています"
+            
         
-    return render_template("login.html", username=username,password=password)
+    return render_template("login.html", username=username,password=password,error=error_message)
 
 # 新規登録処理
 @app.route('/signup', methods=['GET', 'POST'])
@@ -181,11 +204,14 @@ def signup():
     db_filename = "TEST.db"
     username=None
     password = None
+    error_message = None
+
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        print(username)
-        print(password)
+        # print(username)
+        # print(password)
+        
         if username=="":
             username==False
             return render_template('signup.html', submitted=True,username=username,password=password)
@@ -225,3 +251,6 @@ def index():
             result = {'focus':'unfocused'}
         return jsonify(result)
     return render_template('index_coolver.html')
+
+
+
