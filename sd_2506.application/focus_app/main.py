@@ -1,10 +1,11 @@
 from . import app
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify,redirect
 import cv2
 import mediapipe as mp
 import numpy as np
 import time
 import base64
+import sqlite3
 
 mp_face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 drawing = mp.solutions.drawing_utils
@@ -13,12 +14,73 @@ eye_closed_start_time = None
 gaze_away_start_time = None
 face_missing_start_time = None
 
+# 初期リダイレクト先
+redirect_target = {"url": "http://localhost:5000/"}
+
+#テーブルの作成
+def table_create(db_filename):
+    with sqlite3.connect(db_filename) as conn:
+        cursor = conn.cursor()
+        
+        # テーブル作成クエリ
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                password TEXT NOT NULL
+            )
+        """)
+
+# データベースに挿入(ログイン)
+def database_insert(db_filename,name,password):
+    with sqlite3.connect(db_filename) as conn:
+        cursor = conn.cursor()
+    
+        # データの挿入（? プレースホルダでSQLインジェクション対策）
+        cursor.execute("""
+            INSERT INTO users (name, password)
+            VALUES (?, ?)
+        """, (name, password))
+        result = cursor.fetchone()
+        return result
+
+#データがあるかの処理
+def login_process(db_filename,name, password):
+    try:
+        with sqlite3.connect(db_filename) as conn:
+            cursor = conn.cursor()
+
+            # nameとpasswordが一致するレコードを検索
+            cursor.execute("""
+                SELECT * FROM users
+                WHERE name = ? AND password = ?
+            """, (name, password))
+
+            result = cursor.fetchone()
+            if result ==None:
+                result=False
+            return result
+            
+    except sqlite3.Error as e:
+        print("ログイン処理中にエラーが発生しました:", e)
+        return False
+    
+# 名前が含まれているか判定する
+def is_registered(db_filename,name):
+    conn = sqlite3.connect(db_filename)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM users WHERE name = ?", (name,))
+    result = cursor.fetchone()
+    conn.close()
+    return result is not None
+
+
 # 目の縦横の長さ
 def calculate_EAR(eye_landmarks):
     A = np.linalg.norm(eye_landmarks[1] - eye_landmarks[5])
     B = np.linalg.norm(eye_landmarks[2] - eye_landmarks[4])
     C = np.linalg.norm(eye_landmarks[0] - eye_landmarks[3])
-    print('debug1',end=' + ')
+    print('debug1')
     return (A + B) / (2.0 * C)
 
 #　目が閉じているかどうかを判断
@@ -36,11 +98,11 @@ def calculate_focus_score(landmarks):
         if eye_closed_start_time is None:
             eye_closed_start_time = time.time()
         duration = time.time() - eye_closed_start_time
-        score -= min(50, int((duration / 5.0) * 50))
+        score -= min(50, int((duration / 10.0) * 50))
     else:
         eye_closed_start_time = None
 
-    print('debug2',end=' + ')
+    print('debug2')
     return max(score, 0)
 
 
@@ -93,6 +155,59 @@ def decode_base64_image(base64_string):
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     return frame
 
+# ログイン処理
+@app.route('/login', methods=["GET", "POST"])
+def login():
+    # 1.データベースの作成
+    # データベースファイル名
+    db_filename = "TEST.db"
+
+    table_create(db_filename)
+    
+    username=None
+    password = None
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        judgment=login_process(db_filename,username, password)
+        if judgment:
+            return redirect(redirect_target["url"], code=302)
+        
+    return render_template("login.html", username=username,password=password)
+
+# 新規登録処理
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    db_filename = "TEST.db"
+    username=None
+    password = None
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        print(username)
+        print(password)
+        if username=="":
+            username==False
+            return render_template('signup.html', submitted=True,username=username,password=password)
+        elif password=="":
+            password==False
+            return render_template('signup.html', submitted=True,username=username,password=password)
+            
+        else:
+            # user名とパスワードが両方あるかどうか判断する
+            judgment1=login_process(db_filename,username, password)
+            print(judgment1)
+            judgment2=is_registered(db_filename,username)
+            print(judgment2)
+            # DB上にuser名とパスワードがない
+            if judgment1==False and judgment2==False:
+                database_insert(db_filename,username,password)
+                return redirect(redirect_target["url"], code=302)
+     
+                
+        return render_template('signup.html', submitted=True,username=username,password=password)
+    return render_template('signup.html', submitted=False,username=username,password=password)
+
 
 @app.route('/', methods=['GET','POST'])
 def index():
@@ -104,7 +219,7 @@ def index():
         image_data = data.get('image')
         imd = decode_base64_image(image_data)
         gen_frames(imd)
-        if score_data['score'] >= 70:
+        if score_data['score'] >= 60:
             result = {'focus':'focused'}
         else:
             result = {'focus':'unfocused'}
