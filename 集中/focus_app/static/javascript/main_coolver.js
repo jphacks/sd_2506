@@ -1,26 +1,25 @@
-// ========================================
-// Cool Version - Main JavaScript
-// ========================================
-
 // グローバル変数
 let cameraStream = null;
 let cameraOn = false;
-let focusSeconds = 0, unfocusSeconds = 0, lastFocus = true;
+let focusSeconds = 0;
+let unfocusSeconds = 0;
+let lastFocus = true;
 let growthLevel = 0;
-let sessionTags = "", sessionMemo = "";
+let currentScore = 100;
+let sessionTags = "";
+let sessionMemo = "";
 let analysisInterval = null;
 let timerInterval = null;
 let audioUnlocked = false;
 let pendingBGM = false;
-let breakTimerInterval = null;  // 休憩タイマー用インターバル
-let breakTimerRunning = false;  // 休憩タイマーの実行状態
+let breakTimerInterval = null;
+let breakTimerRunning = false;
 
 // 成長アイコン
 const growthImgs = ["🌱", "🌿", "🌳", "🌻", "🍎"];
+const GROWTH_INTERVAL = 600;
 
-// ========================================
 // 画面遷移
-// ========================================
 function showScreen(screen) {
     ["main-screen", "memory-game-screen", "break-timer-screen", "history-screen", "settings-screen"].forEach(id => {
         const element = document.getElementById(id);
@@ -30,9 +29,18 @@ function showScreen(screen) {
     if (targetScreen) targetScreen.classList.remove("d-none");
 }
 
-// ========================================
+function updateActiveNav(activeId) {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    const activeItem = document.getElementById(activeId);
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
+}
+
+
 // カメラ制御
-// ========================================
 function startCamera() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert('お使いのブラウザはカメラをサポートしていません');
@@ -58,6 +66,7 @@ function startCamera() {
             // 分析開始
             if (analysisInterval) clearInterval(analysisInterval);
             analysisInterval = setInterval(captureAndSend, 3000);
+            console.log('分析を開始しました');
         })
         .catch(err => {
             console.error('Camera error:', err);
@@ -88,20 +97,19 @@ function stopCamera() {
         if (analysisInterval) {
             clearInterval(analysisInterval);
             analysisInterval = null;
-            console.log('📊 分析を停止しました');
+            console.log('分析を停止しました');
         }
         
-        // ステータスを待機中に戻す
+        // ステータスをリセット
         resetFocusStatus();
     }
 }
 
-// 集中状態をリセット
 function resetFocusStatus() {
     const statusBadge = document.getElementById('status-badge');
-    const statusIcon = document.getElementById('status-icon');
-    const statusText = document.getElementById('status-text');
-    const statusSubtext = document.getElementById('status-subtext');
+    const statusIcon = document.getElementById('status-icon-main');
+    const statusText = document.getElementById('status-text-main');
+    const statusSubtext = document.getElementById('status-subtext-main');
     
     if (statusBadge) {
         statusBadge.textContent = '待機中';
@@ -111,11 +119,9 @@ function resetFocusStatus() {
     if (statusText) statusText.textContent = '分析待機中';
     if (statusSubtext) statusSubtext.textContent = 'カメラを起動してください';
     
-    // 集中切れ警告を非表示
     const breakOrGame = document.getElementById('break-or-game');
     if (breakOrGame) breakOrGame.classList.add('d-none');
 }
-
 
 function updateCameraButton() {
     const toggleBtn = document.getElementById('camera-toggle');
@@ -123,12 +129,10 @@ function updateCameraButton() {
     
     if (cameraOn) {
         toggleBtn.innerHTML = '<i class="fas fa-stop me-2"></i>カメラOFF';
-        toggleBtn.classList.remove('btn-danger');
-        toggleBtn.classList.add('btn-warning');
+        toggleBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
     } else {
         toggleBtn.innerHTML = '<i class="fas fa-video me-2"></i>カメラON';
-        toggleBtn.classList.remove('btn-warning');
-        toggleBtn.classList.add('btn-danger');
+        toggleBtn.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
     }
 }
 
@@ -145,15 +149,13 @@ function showCameraOffOverlay() {
     if (overlay && overlayText) {
         overlay.style.display = 'flex';
         overlayText.textContent = 'カメラがOFFになっています';
-        // スピナーを非表示
         const spinner = overlay.querySelector('.spinner-border');
         if (spinner) spinner.style.display = 'none';
     }
 }
 
-// ========================================
+
 // オーディオアンロック
-// ========================================
 function unlockAudio() {
     if (audioUnlocked) return;
     
@@ -177,12 +179,10 @@ function unlockAudio() {
 }
 
 function initAudioContext() {
-    // AudioContext初期化（必要に応じて実装）
+    // AudioContext初期化
 }
 
-// ========================================
 // 初期化
-// ========================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded');
     
@@ -200,7 +200,10 @@ document.addEventListener('DOMContentLoaded', function() {
     startFocusTimer();
     
     // カメラ自動起動
-    startCamera();
+    setTimeout(() => {
+        startCamera();
+    }, 500);
+
 });
 
 function setupEventListeners() {
@@ -213,35 +216,40 @@ function setupEventListeners() {
         };
     }
 
-    // セッション記録
+    // サイドバーナビゲーション(add 10/18/15:02)
+    const navMain = document.getElementById('nav-main');
+    const navHistory = document.getElementById('nav-history');
+    const navSettings = document.getElementById('nav-settings');
+
+    if (navMain) {
+        navMain.onclick = function(e) {
+            e.preventDefault();
+            showScreen('main-screen');
+            updateActiveNav('nav-main');
+        };
+    }
+
+    if (navHistory) {
+        navHistory.onclick = function(e) {
+            e.preventDefault();
+            showScreen('history-screen');
+            renderFocusHistory();
+            updateActiveNav('nav-history');
+        };
+    }
+
+    if (navSettings) {
+        navSettings.onclick = function(e) {
+            e.preventDefault();
+            showScreen('settings-screen');
+            loadSettingsUI();
+            updateActiveNav('nav-settings');
+        };
+    }
+
+     // セッション記録
     const saveBtn = document.getElementById('save-session');
     if (saveBtn) saveBtn.onclick = saveSessionUI;
-
-    // 履歴
-    const historyBtn = document.getElementById('btn-history');
-    if (historyBtn) {
-        historyBtn.onclick = function() { 
-            showScreen('history-screen'); 
-            renderFocusHistory(); 
-        };
-    }
-    const backFromHistory = document.getElementById('back-main-from-history');
-    if (backFromHistory) {
-        backFromHistory.onclick = function() { showScreen('main-screen'); };
-    }
-
-    // 設定
-    const settingsBtn = document.getElementById('btn-settings');
-    if (settingsBtn) {
-        settingsBtn.onclick = function() { 
-            showScreen('settings-screen'); 
-            loadSettingsUI(); 
-        };
-    }
-    const backFromSettings = document.getElementById('back-main-from-settings');
-    if (backFromSettings) {
-        backFromSettings.onclick = function() { showScreen('main-screen'); };
-    }
 
     // BGM設定
     const enableBgmCheckbox = document.getElementById('enable-bgm');
@@ -260,17 +268,22 @@ function setupEventListeners() {
     if (gameBtn) {
         gameBtn.onclick = function() {
             showScreen('memory-game-screen');
+            updateActiveNav('nav-main');
             runMemoryGame('memory-game');
         };
     }
     if (manualGameBtn) {
         manualGameBtn.onclick = function() {
             showScreen('memory-game-screen');
+            updateActiveNav('nav-main');
             runMemoryGame('memory-game');
         };
     }
     if (backFromGame) {
-        backFromGame.onclick = function() { showScreen('main-screen'); };
+        backFromGame.onclick = function() { 
+            showScreen('main-screen'); 
+            updateActiveNav('nav-main');
+        };
     }
 
     // 休憩タイマー
@@ -282,40 +295,31 @@ function setupEventListeners() {
     if (breakBtn) {
         breakBtn.onclick = function() {
             showScreen('break-timer-screen');
+            updateActiveNav('nav-main');
             const breakTimer = document.getElementById('break-timer');
             if (breakTimer) breakTimer.innerHTML = "";
-            // タイマーが実行中なら停止
-            if (breakTimerRunning) {
-                stopBreakTimer();
-            }
+            if (breakTimerRunning) stopBreakTimer();
         };
     }
     if (manualBreakBtn) {
         manualBreakBtn.onclick = function() {
             showScreen('break-timer-screen');
+            updateActiveNav('nav-main');
             const breakTimer = document.getElementById('break-timer');
             if (breakTimer) breakTimer.innerHTML = "";
-            // タイマーが実行中なら停止
-            if (breakTimerRunning) {
-                stopBreakTimer();
-            }
+            if (breakTimerRunning) stopBreakTimer();
         };
     }
     if (backFromBreak) {
         backFromBreak.onclick = function() { 
-            showScreen('main-screen'); 
-            // メイン画面に戻る時もタイマーを停止
-            if (breakTimerRunning) {
-                stopBreakTimer();
-            }
+            showScreen('main-screen');
+            updateActiveNav('nav-main');
+            if (breakTimerRunning) stopBreakTimer();
         };
     }
     if (startBreakBtn) {
         startBreakBtn.onclick = function() {
-            // 既存のタイマーを停止
-            if (breakTimerRunning) {
-                stopBreakTimer();
-            }
+            if (breakTimerRunning) stopBreakTimer();
             
             let h = parseInt(document.getElementById('break-hour').value, 10) || 0;
             let m = parseInt(document.getElementById('break-min').value, 10) || 0;
@@ -334,14 +338,10 @@ function setupEventListeners() {
     const requestPermissionBtn = document.getElementById('request-notification-permission');
     const basicNotificationBtn = document.getElementById('test-basic-notification');
     const serviceWorkerNotificationBtn = document.getElementById('test-sw-notification');
-    const startPeriodicBtn = document.getElementById('start-periodic-notifications');
-    const stopPeriodicBtn = document.getElementById('stop-periodic-notifications');
     
     if (requestPermissionBtn) requestPermissionBtn.onclick = requestNotificationPermission;
     if (basicNotificationBtn) basicNotificationBtn.onclick = showBasicNotification;
     if (serviceWorkerNotificationBtn) serviceWorkerNotificationBtn.onclick = showServiceWorkerNotification;
-    if (startPeriodicBtn) startPeriodicBtn.onclick = startPeriodicNotifications;
-    if (stopPeriodicBtn) stopPeriodicBtn.onclick = stopPeriodicNotifications;
     
     setTimeout(() => {
         checkNotificationPermission();
@@ -349,33 +349,44 @@ function setupEventListeners() {
     }, 1000);
 }
 
-// ========================================
+
 // タイマー
-// ========================================
 function startFocusTimer() {
     timerInterval = setInterval(() => {
-        if (lastFocus) {
-            focusSeconds++;
-        } else {
-            unfocusSeconds++;
+        if (cameraOn) {
+            if (lastFocus) {
+                focusSeconds++;
+            } else {
+                unfocusSeconds++;
+            }
+            updateTimerDisplay();
         }
-        
-        // UI更新
-        updateTimerDisplay();
     }, 1000);
 }
 
 function updateTimerDisplay() {
-    const timerElement = document.getElementById('focus-timer');
-    if (timerElement) {
-        timerElement.textContent = `集中: ${focusSeconds}s / 非集中: ${unfocusSeconds}s`;
+    // 新しいタイマー表示を更新
+    const focusDisplay = document.getElementById('timer-focus-display');
+    const unfocusDisplay = document.getElementById('timer-unfocus-display');
+    
+    if (focusDisplay) {
+        focusDisplay.textContent = formatTimeDetailed(focusSeconds);
+    }
+    if (unfocusDisplay) {
+        unfocusDisplay.textContent = formatTimeDetailed(unfocusSeconds);
     }
     
-    // メトリクス更新
-    const focusTimeElement = document.getElementById('metric-focus-time');
-    const unfocusTimeElement = document.getElementById('metric-unfocus-time');
-    if (focusTimeElement) focusTimeElement.textContent = formatTimeShort(focusSeconds);
-    if (unfocusTimeElement) unfocusTimeElement.textContent = formatTimeShort(unfocusSeconds);
+    // スコア更新
+    updateScore();
+    
+    // 成長プログレスバー更新
+    updateGrowthProgress();
+}
+
+function formatTimeDetailed(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}分${s}秒`;
 }
 
 function formatTimeShort(seconds) {
@@ -384,45 +395,67 @@ function formatTimeShort(seconds) {
     return `${m}分`;
 }
 
-// ========================================
+function updateScore() {
+    // 集中度に応じてスコア計算
+    const totalTime = focusSeconds + unfocusSeconds;
+    if (totalTime === 0) {
+        currentScore = 100;
+    } else {
+        const focusRate = focusSeconds / totalTime;
+        currentScore = Math.round(focusRate * 100);
+    }
+    
+    const scoreDisplay = document.getElementById('current-score-display');
+    if (scoreDisplay) {
+        scoreDisplay.textContent = currentScore;
+    }
+}
+
+function updateGrowthProgress() {
+    const progress = (focusSeconds % GROWTH_INTERVAL) / GROWTH_INTERVAL * 100;
+    const progressBar = document.getElementById('growth-progress-bar');
+    if (progressBar) {
+        progressBar.style.width = progress + '%';
+        progressBar.textContent = Math.round(progress) + '%';
+    }
+}
+
 // 画像キャプチャ→分析
-// ========================================
+//デモ用：30%の確率で状態変更 (440~)//
 function captureAndSend() {
-    const video = document.getElementById('camera');
-    if (!video || !video.videoWidth || video.videoWidth === 0) {
-        console.log('📷 Video not ready yet');
+    // カメラがOFFの場合は何もしない
+    if (!cameraOn) {
+        console.log('カメラがOFFのため分析をスキップします');
         return;
     }
     
-    console.log('📸 キャプチャ実行中');
+    const video = document.getElementById('camera');
+    if (!video || !video.videoWidth || video.videoWidth === 0) {
+        console.log('Video not ready yet');
+        return;
+    }
     
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = canvas.toDataURL('image/jpeg');
-
-    fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageData })
-    })
-    .then(res => res.json())
-    .then(data => updateFocusStatus(data))
-    .catch(err => {
-        console.log('分析サーバーに接続できません:', err);
-    });
+    console.log('キャプチャ実行中');
+    
+    // デモ用：30%の確率で状態変更
+    if (Math.random() > 0.7) {
+        const demoResult = {
+            focus: Math.random() > 0.5 ? 'focused' : 'unfocused',
+            confidence: Math.random()
+        };
+        console.log('デモ用状態変更:', demoResult);
+        updateFocusStatus(demoResult);
+    }
 }
-const intervalId = setInterval(captureAndSend, 500);
-// ========================================
+
+
 // 集中状態更新
-// ========================================
+
 function updateFocusStatus(result) {
     const statusBadge = document.getElementById('status-badge');
-    const statusIcon = document.getElementById('status-icon');
-    const statusText = document.getElementById('status-text');
-    const statusSubtext = document.getElementById('status-subtext');
+    const statusIcon = document.getElementById('status-icon-main');
+    const statusText = document.getElementById('status-text-main');
+    const statusSubtext = document.getElementById('status-subtext-main');
     
     if (result.focus === 'focused') {
         if (statusBadge) {
@@ -443,9 +476,11 @@ function updateFocusStatus(result) {
             playBGM();
         }
         
-        if (focusSeconds > 0 && focusSeconds % 600 === 0) {
+        // 成長判定（10分ごと）
+        if (focusSeconds > 0 && focusSeconds % GROWTH_INTERVAL === 0) {
             growthLevel++;
             updateGrowthArea();
+            showLevelUpNotification();
         }
     } else {
         if (statusBadge) {
@@ -463,23 +498,29 @@ function updateFocusStatus(result) {
     }
 }
 
-// ========================================
+function showLevelUpNotification() {
+    if (Notification.permission === 'granted') {
+        new Notification('レベルアップ！', {
+            body: `成長レベル ${growthLevel} になりました！`,
+            icon: 'icons/icon-192.png'
+        });
+    }
+}
+
 // 成長表示
-// ========================================
 function updateGrowthArea() {
     let img = growthImgs[Math.min(growthLevel, growthImgs.length - 1)];
     const growthArea = document.getElementById('growth-area');
     if (growthArea) {
         growthArea.innerHTML = `
-            <div class="growth-icon">${img}</div>
-            <div class="growth-level">レベル ${growthLevel}</div>
+            <div class="growth-icon-large">${img}</div>
+            <div class="growth-level-text">レベル ${growthLevel}</div>
+            <div class="growth-description">集中時間を積み重ねて成長させよう！</div>
         `;
     }
 }
 
-// ========================================
 // 神経衰弱ゲーム
-// ========================================
 let firstCard = null;
 let secondCard = null;
 let lockBoard = false;
@@ -499,7 +540,7 @@ function runMemoryGame(targetId) {
     board.innerHTML = '<div id="memory-board" class="memory-board"></div><div id="memory-info" class="mt-3 text-center"></div>';
     const memoryBoard = document.getElementById('memory-board');
     const memoryInfo = document.getElementById('memory-info');
-    if (memoryInfo) memoryInfo.textContent = '試行回数: 0';
+    if (memoryInfo) memoryInfo.innerHTML = '<h4>試行回数: <span id="tries-count">0</span></h4>';
 
     let tries = 0;
 
@@ -519,7 +560,9 @@ function runMemoryGame(targetId) {
                 secondCard = card;
                 lockBoard = true;
                 tries++;
-                if (memoryInfo) memoryInfo.textContent = '試行回数: ' + tries;
+                const triesCount = document.getElementById('tries-count');
+                if (triesCount) triesCount.textContent = tries;
+                
                 if (firstCard.dataset.emoji === secondCard.dataset.emoji) {
                     matchCount++;
                     setTimeout(() => {
@@ -530,7 +573,7 @@ function runMemoryGame(targetId) {
                         lockBoard = false;
                         if (matchCount === emojis.length) {
                             if (memoryInfo) {
-                                memoryInfo.innerHTML += '<div class="mt-2 alert alert-success">クリア！おめでとう！</div>';
+                                memoryInfo.innerHTML += '<div class="mt-3 alert alert-success"><h4>🎉 クリア！おめでとう！</h4><p>試行回数: ' + tries + '回</p></div>';
                             }
                         }
                     }, 400);
@@ -551,11 +594,9 @@ function runMemoryGame(targetId) {
     });
 }
 
-// ========================================
+
 // 休憩タイマー
-// ========================================
 function runBreakTimer(targetId, seconds) {
-    // 既存のタイマーをクリア
     if (breakTimerInterval) {
         clearInterval(breakTimerInterval);
     }
@@ -566,7 +607,6 @@ function runBreakTimer(targetId, seconds) {
     const target = document.getElementById(targetId);
     if (!target) return;
     
-    // 初期表示
     updateBreakTimerDisplay(target, remainingTime);
     
     breakTimerInterval = setInterval(() => {
@@ -577,24 +617,30 @@ function runBreakTimer(targetId, seconds) {
             stopBreakTimer();
             target.innerHTML = `
                 <div class="alert alert-success text-center">
-                    <h4 class="mb-3">
+                    <h3 class="mb-3">
                         <i class="fas fa-check-circle me-2"></i>
                         休憩終了！
-                    </h4>
+                    </h3>
                     <p class="mb-0">再開しましょう</p>
                 </div>
             `;
+            
+            // 終了通知
+            if (Notification.permission === 'granted') {
+                new Notification('休憩終了', {
+                    body: '学習を再開しましょう！'
+                });
+            }
         }
     }, 1000);
 }
 
-// 休憩タイマー表示を更新
 function updateBreakTimerDisplay(target, remainingTime) {
     const timeString = formatTime(remainingTime);
     
     target.innerHTML = `
         <div class="alert alert-info text-center">
-            <h3 class="mb-3">休憩中</h3>
+            <h4 class="mb-3">休憩中</h4>
             <div class="display-3 fw-bold text-primary mb-3" id="timer">${timeString}</div>
             <button class="btn btn-danger btn-lg" onclick="stopBreakTimer()">
                 <i class="fas fa-stop me-2"></i>タイマーを停止
@@ -603,7 +649,6 @@ function updateBreakTimerDisplay(target, remainingTime) {
     `;
 }
 
-// 休憩タイマーを停止
 function stopBreakTimer() {
     if (breakTimerInterval) {
         clearInterval(breakTimerInterval);
@@ -624,12 +669,10 @@ function stopBreakTimer() {
         `;
     }
     
-    console.log('⏹️ 休憩タイマーを停止しました');
+    console.log('休憩タイマーを停止しました');
 }
 
-// グローバルスコープに追加（ボタンから呼び出せるように）
 window.stopBreakTimer = stopBreakTimer;
-
 
 function formatTime(sec) {
     const h = Math.floor(sec / 3600);
@@ -640,9 +683,7 @@ function formatTime(sec) {
     return `${s}秒`;
 }
 
-// ========================================
 // セッション記録
-// ========================================
 function saveSessionUI() {
     const sanitizeInput = (input) => {
         if (!input) return '';
@@ -662,6 +703,7 @@ function saveSessionUI() {
         focus: focusSeconds,
         unfocus: unfocusSeconds,
         growth: growthLevel,
+        score: currentScore,
         tags: sessionTags.split(',').map(s => s.trim()).filter(s=>s),
         memo: sessionMemo
     };
@@ -680,11 +722,12 @@ function saveSessionUI() {
     alert("記録しました！");
     if (tagsInput) tagsInput.value = '';
     if (memoInput) memoInput.value = '';
+    
+    console.log('セッション保存:', log);
 }
 
-// ========================================
+
 // 履歴表示
-// ========================================
 function renderFocusHistory() {
     let logs = [];
     try {
@@ -696,24 +739,47 @@ function renderFocusHistory() {
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
     
-    let html = logs.length === 0 ? '<div class="alert alert-info">履歴がありません</div>' :
-        `<div class="table-responsive"><table class="table table-striped">
-          <thead class="table-primary">
-            <tr><th>日時</th><th>集中</th><th>非集中</th><th>レベル</th><th>タグ</th><th>メモ</th></tr>
-          </thead><tbody>
-          ${logs.map((l,i) =>
-            `<tr>
-            <td>${new Date(l.date).toLocaleString('ja-JP')}</td>
-            <td>${l.focus}s</td>
-            <td>${l.unfocus}s</td>
-            <td>${l.growth}</td>
-            <td><input value="${(l.tags || []).join(',')}" class="form-control form-control-sm" onchange="updateTag(${i},this.value)"></td>
-            <td><input value="${l.memo || ''}" class="form-control form-control-sm" onchange="updateMemo(${i},this.value)"></td>
-            </tr>`
-          ).join('')}
-          </tbody></table></div>`;
+    if (logs.length === 0) {
+        historyList.innerHTML = '<div class="alert alert-info">履歴がありません</div>';
+        const aiFeedback = document.getElementById('ai-feedback');
+        if (aiFeedback) {
+            aiFeedback.textContent = '履歴がありません';
+        }
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-primary">
+                    <tr><th>日時</th><th>集中</th><th>非集中</th><th>レベル</th><th>スコア</th><th>タグ</th><th>メモ</th></tr>
+                </thead>
+                <tbody>
+    `;
+    
+    logs.forEach((l, i) => {
+        html += `
+            <tr>
+                <td>${new Date(l.date).toLocaleString('ja-JP')}</td>
+                <td>${formatTimeShort(l.focus)}</td>
+                <td>${formatTimeShort(l.unfocus)}</td>
+                <td>${l.growth}</td>
+                <td>${l.score || '-'}</td>
+                <td><input value="${(l.tags || []).join(',')}" class="form-control form-control-sm" onchange="updateTag(${i},this.value)"></td>
+                <td><input value="${l.memo || ''}" class="form-control form-control-sm" onchange="updateMemo(${i},this.value)"></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
     historyList.innerHTML = html;
     
+    //(できればAI)FB
     const aiFeedback = document.getElementById('ai-feedback');
     if (aiFeedback) {
         aiFeedback.textContent = aiFeedbackFromLogs(logs);
@@ -723,7 +789,7 @@ function renderFocusHistory() {
 window.updateTag = function(idx, val) {
     let logs = JSON.parse(localStorage.getItem('focusLogs') || '[]');
     if (logs[idx]) {
-        logs[idx].tags = val.split(',').map(s=>s.trim()).filter(s=>s);
+        logs[idx].tags = val.split(',').map(s => s.trim()).filter(s => s);
         localStorage.setItem('focusLogs', JSON.stringify(logs));
     }
 };
@@ -737,40 +803,52 @@ window.updateMemo = function(idx, val) {
 };
 
 function aiFeedbackFromLogs(logs) {
-    if(!logs.length) return "履歴がありません";
+    if (!logs.length) return "履歴がありません";
+    
     let tagCount = {};
-    logs.forEach(l=> (l.tags||[]).forEach(t=>tagCount[t]=(tagCount[t]||0)+1 ));
-    let bestTag = Object.entries(tagCount).sort((a,b)=>b[1]-a[1])[0]?.[0] || "";
-    let avgFocus = Math.round(logs.reduce((a,b)=>a+b.focus,0)/logs.length);
-    let msg = `平均集中時間：${avgFocus}s。`;
-    if(bestTag) msg += `よく使うタグは「${bestTag}」です。`;
-    msg += "良かった点や反省点をメモして自己成長に役立てましょう！";
+    logs.forEach(l => (l.tags || []).forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
+    
+    let bestTag = Object.entries(tagCount).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+    let avgFocus = Math.round(logs.reduce((a, b) => a + b.focus, 0) / logs.length);
+    let avgScore = Math.round(logs.reduce((a, b) => a + (b.score || 0), 0) / logs.length);
+    
+    let msg = `総セッション数：${logs.length}回\n`;
+    msg += `平均集中時間：${Math.floor(avgFocus / 60)}分${avgFocus % 60}秒\n`;
+    msg += `平均スコア：${avgScore}点\n`;
+    if (bestTag) msg += `よく使うタグ：「${bestTag}」\n`;
+    msg += "\n 良かった点や反省点をメモして自己成長に役立てましょう！";
+    
     return msg;
 }
 
-// ========================================
+
 // 通知機能
-// ========================================
 function showGentleNotification() {
     const enableNotify = document.getElementById('enable-notify');
     if (!enableNotify || !enableNotify.checked) return;
     
-    if (Notification.permission === "granted") {
-        const notifyMsg = document.getElementById('notify-msg');
-        new Notification(notifyMsg ? notifyMsg.value : "そろそろ休憩しませんか？");
-    } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(perm => {
-            if(perm === "granted") showGentleNotification();
-        });
+    // 10分ごとに通知
+    if (focusSeconds % 600 === 0 && focusSeconds > 0) {
+        if (Notification.permission === "granted") {
+            const notifyMsg = document.getElementById('notify-msg');
+            new Notification('集中継続中！', {
+                body: notifyMsg ? notifyMsg.value : "集中時間をチェックしませんか？",
+                icon: 'icons/icon-192.png'
+            });
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(perm => {
+                if (perm === "granted") showGentleNotification();
+            });
+        }
     }
 }
 
 function checkNotificationPermission() {
     if (!('Notification' in window)) {
-        console.log('❌ このブラウザは通知をサポートしていません');
+        console.log('このブラウザは通知をサポートしていません');
         return false;
     }
-    console.log('✅ 通知サポート: 利用可能');
+    console.log('通知サポート: 利用可能');
     return true;
 }
 
@@ -782,10 +860,10 @@ async function requestNotificationPermission() {
         updateNotificationUI(permission);
         
         if (permission === 'granted') {
-            alert('✅ 通知許可が取得できました！');
+            alert('通知許可が取得できました！');
             return true;
         } else if (permission === 'denied') {
-            alert('❌ 通知がブロックされました。');
+            alert('通知がブロックされました。');
             return false;
         }
     } catch (error) {
@@ -796,12 +874,13 @@ async function requestNotificationPermission() {
 
 function showBasicNotification() {
     if (Notification.permission !== 'granted') {
-        alert('❌ 通知許可が必要です。');
+        alert('通知許可が必要です。');
         return;
     }
     
-    const notification = new Notification('🎯 集中力アプリ', {
-        body: `集中時間: ${focusSeconds}秒\n非集中時間: ${unfocusSeconds}秒`
+    const notification = new Notification('集中力アプリ', {
+        body: `集中時間: ${formatTimeShort(focusSeconds)}\n非集中時間: ${formatTimeShort(unfocusSeconds)}\nスコア: ${currentScore}点`,
+        icon: 'icons/icon-192.png'
     });
     
     notification.onclick = function() {
@@ -812,19 +891,20 @@ function showBasicNotification() {
 
 async function showServiceWorkerNotification() {
     if (Notification.permission !== 'granted') {
-        alert('❌ 通知許可が必要です。');
+        alert('通知許可が必要です。');
         return;
     }
     
     if (!('serviceWorker' in navigator)) {
-        alert('❌ Service Workerをサポートしていません');
+        alert('Service Workerをサポートしていません');
         return;
     }
     
     try {
         const registration = await navigator.serviceWorker.ready;
-        await registration.showNotification('🚀 バックグラウンド通知', {
-            body: '他のタブでも表示されます！'
+        await registration.showNotification('バックグラウンド通知テスト', {
+            body: '他のタブでも表示されます！',
+            icon: 'icons/icon-192.png'
         });
     } catch (error) {
         alert('Service Worker通知エラー: ' + error.message);
@@ -838,47 +918,18 @@ function updateNotificationUI(permission) {
     let statusHTML = '';
     switch (permission) {
         case 'granted':
-            statusHTML = '<div class="alert alert-success py-2"><small>✅ 通知許可済み</small></div>';
+            statusHTML = '<div class="alert alert-success py-2 mb-0"><small>✅ 通知許可済み</small></div>';
             break;
         case 'denied':
-            statusHTML = '<div class="alert alert-danger py-2"><small>❌ 通知ブロック済み</small></div>';
+            statusHTML = '<div class="alert alert-danger py-2 mb-0"><small>❌ 通知ブロック済み</small></div>';
             break;
         default:
-            statusHTML = '<div class="alert alert-warning py-2"><small>⚠️ 通知許可待ち</small></div>';
+            statusHTML = '<div class="alert alert-warning py-2 mb-0"><small>⚠️ 通知許可待ち</small></div>';
     }
     statusElement.innerHTML = statusHTML;
 }
 
-let notificationInterval = null;
-
-function startPeriodicNotifications() {
-    if (Notification.permission !== 'granted') {
-        alert('❌ 通知許可が必要です。');
-        return;
-    }
-    
-    if (notificationInterval) clearInterval(notificationInterval);
-    
-    notificationInterval = setInterval(() => {
-        if (document.hidden) {
-            showBasicNotification();
-        }
-    }, 30000);
-    
-    alert('✅ 定期通知を開始しました（30秒ごと）');
-}
-
-function stopPeriodicNotifications() {
-    if (notificationInterval) {
-        clearInterval(notificationInterval);
-        notificationInterval = null;
-        alert('⏹️ 定期通知を停止しました');
-    }
-}
-
-// ========================================
 // BGM機能
-// ========================================
 function playBGM() {
     const enableCheckbox = document.getElementById('enable-bgm');
     if (!enableCheckbox || !enableCheckbox.checked) {
@@ -898,7 +949,7 @@ function playBGM() {
     } else if (bgmValue === "rain") {
         src = "./rain.mp3";
     } else if (bgmValue === "relax") {
-        src = "https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav";
+        src = "";
     } else {
         stopBGM();
         return;
@@ -915,11 +966,11 @@ function playBGM() {
     
     audio.play()
         .then(() => {
-            console.log('✅ BGM started');
+            console.log('BGM started');
             updateBGMButton(true);
         })
         .catch(error => {
-            console.error('❌ BGM failed:', error);
+            console.error('BGM failed:', error);
             if (error.name === 'NotAllowedError') {
                 showBGMActionRequired();
             }
@@ -986,13 +1037,12 @@ function loadSettingsUI() {
     console.log('Settings UI loaded');
 }
 
-// ========================================
+
 // クリーンアップ
-// ========================================
 window.addEventListener('beforeunload', function() {
     if (analysisInterval) clearInterval(analysisInterval);
     if (timerInterval) clearInterval(timerInterval);
-    if (breakTimerInterval) clearInterval(breakTimerInterval);  // 追加
+    if (breakTimerInterval) clearInterval(breakTimerInterval);
     
     if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
@@ -1001,10 +1051,10 @@ window.addEventListener('beforeunload', function() {
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        console.log('📱 ページがバックグラウンド');
+        console.log('ページがバックグラウンド');
     } else {
-        console.log('👀 ページがフォアグラウンド');
+        console.log('ページがフォアグラウンド');
     }
 });
 
-console.log('🎨 Cool Version JavaScript loaded');
+console.log('Cool Version JavaScript loaded successfully');
