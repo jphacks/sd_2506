@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>新規登録</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* 全体の設定 */
+        .container {
+            background-color: white;
+            padding: 0;
+            border-radius: 12px;
+            border: 2px solid #a5c4b2;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 650px;
+            overflow: hidden;
+        }
+
+        /* ラベル */
+        .page-title {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 40px;
+            font-weight: bold;
+            color: #37df58;
+        }
+
+        .form-area {
+            padding: 40px;
+        }
+
+        .label-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 10px;
+        }
+
+
+        /* パスワードの文字 */
+        .label-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000000;
+            margin-left: 16px;
+        }
+
+        /* パスワードを打つ部分 */
+        input[type="text"] {
+            width: 95%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 18px;
+            background-color: #e5ffe8; /* ✅ 入力欄そのものに赤背景 */
+            margin-bottom: 20px;
+        }
+        
+        /* パスワードを打つ部分 */
+        input[type="password"] {
+            width: 95%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 18px;
+            background-color: #e5fff1; /* ✅ 入力欄そのものに赤背景 */
+        }
+
+        /* 送信する部分 */
+        button {
+            background-color: #3df574;
+            color: white;
+            border: none;
+            padding: 15px 110px;
+            border-radius: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 50px;
+        }
+
+        button:hover {
+            background-color: #5ea570;
+        }
+
+        #charCount {
+            font-size: 16px;
+            color: #555;
+            text-align: right;
+        }
+
+        .password-wrapper {
+            position: relative;
+            
+        }
+        .signup-link {
+            display: block;
+            margin-top: 10px; /* ボタンとの間隔 */
+            text-align: center; /* 中央揃え（任意） */
+            color: #007bff;     /* リンク色（任意） */
+            text-decoration: none;
+        }
+        .signup-link:hover {
+            text-decoration: underline;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="page-title">新規登録</div> 
+    <div class="container">
+        <div class="form-area">
+            <form method="POST">
+                <div class="label-row">
+                    <div class="label-text">ユーザー名</div>
+                </div>
+                <input type="text" name="username" id="username" placeholder="ユーザー名" required> <!-- ✅ プレースホルダーなし -->
+                <script>
+                document.querySelector('input[type="text"]').addEventListener("input", function() {
+                    if (this.value.trim() === "") {
+                        this.style.backgroundColor = "#e5fcff"; // 未入力 → 青
+                    } else {
+                        this.style.backgroundColor = "#ffffff"; // 入力済み → 白
+                    }
+                });
+                </script>
+
+                <div class="label-row">
+                    <div class="label-text">パスワード</div>
+                </div>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" placeholder="パスワード">
+                </div>
+                <script>
+                document.querySelector('input[type="password"]').addEventListener("input", function() {
+                    if (this.value.trim() === "") {
+                        this.style.backgroundColor = "#e5fcff"; // 未入力 → 青
+                    } else {
+                        this.style.backgroundColor = "#ffffff"; // 入力済み → 白
+                    }
+                });
+                </script>
+
+                <button type="submit" class="signup-btn">新規登録</button>
+                <a href="{{ url_for('login') }}" class="signup-link">ログインはこちらから</a>
+
+            </form>
+            {% if submitted and not username %}
+                <p>ユーザー名を入力してください</p>
+            {% elif submitted and not password %}
+                <p>パスワードを入力してください</p>
+            {% elif submitted and username or password %}
+                <p>このユーザー名とパスワードは使用されています</p>
+            {% endif %}
+
+        </div>
+    </div>
+</body>
+</html>
