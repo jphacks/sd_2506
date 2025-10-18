@@ -82,9 +82,25 @@
         
         <!-- メインコンテンツ -->
         <main class="main-content-wrapper">
+
+            <!-- セッション開始前の先生選択(先生無し：選択可) -->
+            <div id="session-setup" class="session-setup card mb-4 p-3">
+                <label for="session-teacher" class="form-label fw-bold">
+                    担当先生を選択
+                </label>
+                <select name="teacher_id" id="teacher-select" class="form-select">
+                    <option value="">― 先生なし ―</option>
+                    {% for tid, tname in teachers %}
+                    <option value="{{ tid }}">{{ tname }}</option>
+                    {% endfor %}
+                </select>
+                <button id="btn-start-session" class="btn btn-primary">
+                    学習開始
+                </button>
+            </div>
             
             <!-- メイン画面 -->
-            <div id="main-screen" class="screen">
+            <div id="main-screen" class="screen　d-none">
                 <div class="main-grid">
                     
                     <!-- 左エリア：カメラ＆ステータス -->

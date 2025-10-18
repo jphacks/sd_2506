@@ -8,6 +8,7 @@ let growthLevel = 0;
 let currentScore = 100;
 let sessionTags = "";
 let sessionMemo = "";
+let sessionTeacherId = null;
 let analysisInterval = null;
 let timerInterval = null;
 let audioUnlocked = false;
@@ -184,26 +185,31 @@ function initAudioContext() {
 
 // 初期化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded');
-    
-    // オーディオアンロック
-    document.body.addEventListener('click', unlockAudio, { once: true });
-    document.body.addEventListener('touchstart', unlockAudio, { once: true });
-    document.addEventListener('click', initAudioContext, { once: true });
-    document.addEventListener('touchstart', initAudioContext, { once: true });
-    
-    setupEventListeners();
-    showScreen('main-screen');
-    updateGrowthArea();
-    
-    if (timerInterval) clearInterval(timerInterval);
-    startFocusTimer();
-    
-    // カメラ自動起動
-    setTimeout(() => {
-        startCamera();
-    }, 500);
+  const startBtn = document.getElementById('btn-start-session');
+  const sessionSetup = document.getElementById('session-setup');
+  const mainScreen = document.getElementById('main-screen');
 
+  // 初期表示：セッション設定のみ表示
+  sessionSetup.classList.remove('d-none');
+  mainScreen.classList.add('d-none');
+
+  startBtn.onclick = function() {
+    // セッション設定画面を非表示
+    sessionSetup.classList.add('d-none');
+    // メイン画面を表示
+    mainScreen.classList.remove('d-none');
+
+    // 以降、メイン画面用の初期化処理
+    setupEventListeners();
+    startCamera();
+    startFocusTimer();
+    showScreen('main-screen');
+    // オーディオアンロック
+    // document.body.addEventListener('click', unlockAudio, { once: true });
+    // document.body.addEventListener('touchstart', unlockAudio, { once: true });
+    // document.addEventListener('click', initAudioContext, { once: true });
+    // document.addEventListener('touchstart', initAudioContext, { once: true });
+  };
 });
 
 function setupEventListeners() {

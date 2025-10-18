@@ -82,7 +82,25 @@ def is_registered(db_filename,name):
     conn.close()
     return result is not None
 
+#主キーと名前を取得(teacher)
+def get_teacher_users(db_filename):
+    """
+    user_type='teacher' のユーザー (先生) を取得
+    戻り値: list of tuples (user_id, name)
+    """
+    with sqlite3.connect(db_filename) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT user_id, name
+            FROM users
+            WHERE user_type = 'teacher'
+            ORDER BY name
+        """)
+        teachers = cursor.fetchall()
+    return teachers
 
+
+###集中力判定
 # 目の縦横の長さ
 def calculate_EAR(eye_landmarks):
     A = np.linalg.norm(eye_landmarks[1] - eye_landmarks[5])
@@ -207,6 +225,7 @@ def signup():
     username=None
     password = None
     user_type = None
+    teachers = get_teacher_users(db_filename)
 
     if request.method == "POST":
         username = request.form.get("username")
@@ -217,12 +236,12 @@ def signup():
 
         if not username or username=="":
             username==False
-            return render_template('signup.html', submitted=True,username=username,password=password)
+            return render_template('signup.html', submitted=True,username=username,password=password,teachers=teachers)
         elif not password or password=="":
             password==False
-            return render_template('signup.html', submitted=True,username=username,password=password)
+            return render_template('signup.html', submitted=True,username=username,password=password,teachers=teachers)
         elif not user_type or user_type=="":
-            return render_template('signup.html', submitted=True,username=username,password=password)
+            return render_template('signup.html', submitted=True,username=username,password=password,teachers=teachers)
             
         else:
             # user名とパスワードが両方あるかどうか判断する
@@ -248,7 +267,7 @@ def signup():
                 #return redirect(redirect_target["url"], code=302)
         
         #return render_template('signup.html', submitted=True,username=username,password=password)
-    return render_template('signup.html', submitted=False,username=username,password=password)
+    return render_template('signup.html', submitted=False,username=username,password=password,teachers=teachers)
 
 # 3. ログアウト
 @app.route('/logout')
@@ -259,6 +278,8 @@ def logout():
 #生徒用ページ
 @app.route('/index_coolver', methods=['GET','POST'])
 def index():
+    db_filename = "TEST.db"
+
     if 'username' not in session or session.get('user_type') != 'student':
         return redirect('/', code=302)
     
@@ -275,7 +296,9 @@ def index():
         else:
             result = {'focus':'unfocused'}
         return jsonify(result)
-    return render_template('index_coolver.html', username=session.get('username'))
+    
+    teachers = get_teacher_users(db_filename)
+    return render_template('index_coolver.html', username=session.get('username'),teachers=teachers)
 
 #先生用ページ
 @app.route('/index_teacher')

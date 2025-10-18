@@ -131,12 +131,37 @@ body {
 
 /* メインコンテンツエリア */
 
+/* セッション開始設定 */
+.session-setup {
+    background: #ffffff;
+    border: 2px solid #a5c4b2;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+}
+
+.session-setup label {
+    margin: 0;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.session-setup select {
+    max-width: 240px;
+}
+
+#btn-start-session {
+    padding: 8px 24px;
+}
+
 .main-content-wrapper {
     margin-left: 260px;
     flex: 1;
     padding: 20px;
 }
-
+/* メインコンテンツエリア */
 .main-grid {
     display: grid;
     grid-template-columns: 1fr 400px;
