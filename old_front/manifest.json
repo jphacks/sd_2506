@@ -1,0 +1,21 @@
+{
+    "name": "集中力モニタリング＆自己分析AIサポート",
+    "short_name": "集中力アプリ",
+    "description": "AIを活用した集中力向上支援アプリ",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f5fbff",
+    "theme_color": "#bae0ff",
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
