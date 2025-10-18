@@ -46,7 +46,6 @@
             margin-bottom: 10px;
         }
 
-
         /* パスワードの文字 */
         .label-text {
             font-size: 16px;
@@ -55,30 +54,91 @@
             margin-left: 16px;
         }
 
-        /* パスワードを打つ部分 */
+        /* ユーザー名入力欄 */
         input[type="text"] {
             width: 95%;
             padding: 20px;
             border: 1px solid #ccc;
             border-radius: 10px;
             font-size: 18px;
-            background-color: #e5ffe8; /* ✅ 入力欄そのものに赤背景 */
+            background-color: #e5ffe8;
             margin-bottom: 20px;
         }
         
-        /* パスワードを打つ部分 */
+        /* パスワード入力欄 */
         input[type="password"] {
             width: 95%;
             padding: 20px;
             border: 1px solid #ccc;
             border-radius: 10px;
             font-size: 18px;
-            background-color: #e5fff1; /* ✅ 入力欄そのものに赤背景 */
+            background-color: #e5fff1;
+            margin-bottom: 20px;
         }
 
-        /* 送信する部分 */
+        /* ユーザータイプ選択エリア */
+        .user-type-area {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8fcf9;
+            border-radius: 10px;
+            border: 1px solid #c4e0cc;
+        }
+
+        .user-type-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000000;
+            margin-bottom: 15px;
+            text-align: left;
+            margin-left: 16px;
+        }
+
+        .radio-group {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 2px solid #ccc;
+            background-color: white;
+            transition: all 0.3s ease;
+        }
+
+        .radio-option:hover {
+            border-color:  rgba(16, 185, 129, 0.9);
+            background-color: #f0fff2;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color:  rgba(16, 185, 129, 0.9);
+        }
+
+        .radio-option label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .radio-option.selected {
+            border-color:  rgba(16, 185, 129, 0.9);
+            background-color: #e5ffe8;
+        }
+
+        /* 送信ボタン */
         button {
-            background-color: #3df574;
+            background-color:  rgba(16, 185, 129, 0.9);
             color: white;
             border: none;
             padding: 15px 110px;
@@ -86,35 +146,49 @@
             font-size: 20px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-top: 50px;
+            margin-top: 30px;
         }
 
         button:hover {
-            background-color: #5ea570;
-        }
-
-        #charCount {
-            font-size: 16px;
-            color: #555;
-            text-align: right;
+            background-color:  rgba(16, 185, 129, 0.9);
         }
 
         .password-wrapper {
             position: relative;
-            
         }
+
         .signup-link {
             display: block;
-            margin-top: 10px; /* ボタンとの間隔 */
-            text-align: center; /* 中央揃え（任意） */
-            color: #007bff;     /* リンク色（任意） */
+            margin-top: 10px;
+            text-align: center;
+            color: #007bff;
             text-decoration: none;
         }
+
         .signup-link:hover {
             text-decoration: underline;
         }
 
+        /* エラーメッセージ */
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+        }
 
+        .success-message {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -122,49 +196,104 @@
     <div class="container">
         <div class="form-area">
             <form method="POST">
+                <!-- ユーザー名入力 -->
                 <div class="label-row">
                     <div class="label-text">ユーザー名</div>
                 </div>
-                <input type="text" name="username" id="username" placeholder="ユーザー名" required> <!-- ✅ プレースホルダーなし -->
-                <script>
-                document.querySelector('input[type="text"]').addEventListener("input", function() {
-                    if (this.value.trim() === "") {
-                        this.style.backgroundColor = "#e5fcff"; // 未入力 → 青
-                    } else {
-                        this.style.backgroundColor = "#ffffff"; // 入力済み → 白
-                    }
-                });
-                </script>
+                <input type="text" name="username" id="username" placeholder="ユーザー名" required>
 
+                <!-- パスワード入力 -->
                 <div class="label-row">
                     <div class="label-text">パスワード</div>
                 </div>
                 <div class="password-wrapper">
-                    <input type="password" id="password" name="password" placeholder="パスワード">
+                    <input type="password" id="password" name="password" placeholder="パスワード" required>
                 </div>
-                <script>
-                document.querySelector('input[type="password"]').addEventListener("input", function() {
-                    if (this.value.trim() === "") {
-                        this.style.backgroundColor = "#e5fcff"; // 未入力 → 青
-                    } else {
-                        this.style.backgroundColor = "#ffffff"; // 入力済み → 白
-                    }
-                });
-                </script>
 
+                <!-- ユーザータイプ選択 -->
+                <div class="user-type-area">
+                    <div class="user-type-title">アカウントタイプ</div>
+                    <div class="radio-group">
+                        <div class="radio-option" id="student-option">
+                            <input type="radio" id="user-type-student" name="user_type" value="student" checked>
+                            <label for="user-type-student">生徒</label>
+                        </div>
+                        <div class="radio-option" id="teacher-option">
+                            <input type="radio" id="user-type-teacher" name="user_type" value="teacher">
+                            <label for="user-type-teacher">先生</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 送信ボタン -->
                 <button type="submit" class="signup-btn">新規登録</button>
                 <a href="{{ url_for('login') }}" class="signup-link">ログインはこちらから</a>
-
             </form>
-            {% if submitted and not username %}
-                <p>ユーザー名を入力してください</p>
-            {% elif submitted and not password %}
-                <p>パスワードを入力してください</p>
-            {% elif submitted and username or password %}
-                <p>このユーザー名とパスワードは使用されています</p>
+
+            <!-- エラーメッセージ表示 -->
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
             {% endif %}
 
+            <!-- 成功メッセージ表示 -->
+            {% if success %}
+                <div class="success-message">{{ success }}</div>
+            {% endif %}
         </div>
     </div>
+
+    <script>
+        // ユーザー名入力欄の色変更
+        document.querySelector('input[type="text"]').addEventListener("input", function() {
+            if (this.value.trim() === "") {
+                this.style.backgroundColor = "#e5fcff";
+            } else {
+                this.style.backgroundColor = "#ffffff";
+            }
+        });
+
+        // パスワード入力欄の色変更
+        document.querySelector('input[type="password"]').addEventListener("input", function() {
+            if (this.value.trim() === "") {
+                this.style.backgroundColor = "#e5fcff";
+            } else {
+                this.style.backgroundColor = "#ffffff";
+            }
+        });
+
+        // ラジオボタンの選択状態を視覚的に表示
+        const radioOptions = document.querySelectorAll('.radio-option');
+        const radioInputs = document.querySelectorAll('input[type="radio"]');
+
+        radioInputs.forEach((radio, index) => {
+            radio.addEventListener('change', function() {
+                // すべての選択を解除
+                radioOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // 選択されたものにスタイルを適用
+                if (this.checked) {
+                    radioOptions[index].classList.add('selected');
+                }
+            });
+        });
+
+        // ラジオボタンのラベルクリックで選択
+        radioOptions.forEach((option, index) => {
+            option.addEventListener('click', function() {
+                radioInputs[index].checked = true;
+                
+                // すべての選択を解除
+                radioOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // クリックされたものにスタイルを適用
+                this.classList.add('selected');
+            });
+        });
+
+        // 初期状態で生徒を選択状態にする
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('student-option').classList.add('selected');
+        });
+    </script>
 </body>
 </html>
