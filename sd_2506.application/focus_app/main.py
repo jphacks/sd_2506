@@ -15,7 +15,7 @@ gaze_away_start_time = None
 face_missing_start_time = None
 
 # 初期リダイレクト先
-redirect_target = {"url": "http://localhost:5000/"}
+redirect_target = {"url": "http://localhost:5000/index_coolver"}
 
 #テーブルの作成
 def table_create(db_filename):
@@ -156,7 +156,7 @@ def decode_base64_image(base64_string):
     return frame
 
 # ログイン処理
-@app.route('/login', methods=["GET", "POST"])
+@app.route('/', methods=["GET", "POST"])
 def login():
     # 1.データベースの作成
     # データベースファイル名
@@ -209,7 +209,7 @@ def signup():
     return render_template('signup.html', submitted=False,username=username,password=password)
 
 
-@app.route('/', methods=['GET','POST'])
+@app.route('/index_coolver', methods=['GET','POST'])
 def index():
     if request.method == 'POST':
         data = request.json
