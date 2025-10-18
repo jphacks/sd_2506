@@ -397,14 +397,14 @@ function captureAndSend() {
     console.log('📸 キャプチャ実行中');
     
     // デモ用：30%の確率で状態変更
-    if (Math.random() > 0.7) {
+    /*if (Math.random() > 0.7) {
         const demoResult = {
             focus: Math.random() > 0.5 ? 'focused' : 'unfocused',
             confidence: Math.random()
         };
         console.log('🎮 デモ用状態変更:', demoResult);
         updateFocusStatus(demoResult);
-    }
+    }*/
 }
 const intervalId = setInterval(captureAndSend, 500);
 // ========================================

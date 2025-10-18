@@ -36,7 +36,7 @@ def calculate_focus_score(landmarks):
         if eye_closed_start_time is None:
             eye_closed_start_time = time.time()
         duration = time.time() - eye_closed_start_time
-        score -= min(50, int((duration / 5.0) * 50))
+        score -= min(50, int((duration / 10.0) * 50))
     else:
         eye_closed_start_time = None
 
@@ -94,8 +94,6 @@ def decode_base64_image(base64_string):
     return frame
 
 
-
-
 @app.route('/', methods=['GET','POST'])
 def index():
     if request.method == 'POST':
@@ -106,7 +104,7 @@ def index():
         image_data = data.get('image')
         imd = decode_base64_image(image_data)
         gen_frames(imd)
-        if score_data['score'] >= 70:
+        if score_data['score'] >= 60:
             result = {'focus':'focused'}
         else:
             result = {'focus':'unfocused'}
