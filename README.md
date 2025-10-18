@@ -19,10 +19,12 @@
 
 ## 開発技術
 ### 活用した技術
-* Flask
+* ウェブ開発(HTML、CSS、js)
+* Python
+* db,json
 #### API・データ
-* sqlite3
-* 
+* sqlite3(db)
+* json
 
 #### フレームワーク・ライブラリ・モジュール
 * Flask
