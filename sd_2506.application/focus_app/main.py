@@ -1,11 +1,12 @@
 from . import app
-from flask import render_template, request, jsonify,redirect
+from flask import render_template, request, jsonify,redirect,session
 import cv2
 import mediapipe as mp
 import numpy as np
 import time
 import base64
 import sqlite3
+import secrets
 
 mp_face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 drawing = mp.solutions.drawing_utils
@@ -13,6 +14,8 @@ score_data = {"score": 100}
 eye_closed_start_time = None
 gaze_away_start_time = None
 face_missing_start_time = None
+
+app.secret_key = secrets.token_hex(16)
 
 # 先生専用のID・パスワード（環境変数や設定ファイルで管理することを推奨）
 TEACHER_USERNAME = "teacher_admin"
@@ -211,7 +214,7 @@ def signup():
         password = request.form.get("password")
         # print(username)
         # print(password)
-        
+
         if username=="":
             username==False
             return render_template('signup.html', submitted=True,username=username,password=password)
@@ -251,6 +254,3 @@ def index():
             result = {'focus':'unfocused'}
         return jsonify(result)
     return render_template('index_coolver.html')
-
-
-
