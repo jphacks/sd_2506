@@ -36,12 +36,17 @@
                 <div class="top-bar-right">
                     <div class="teacher-info">
                         <span class="material-icons">account_circle</span>
-                        <span>山田 太郎 先生</span>
+                        <span>{{ username }}</span>
                     </div>
-                    <button class="btn-icon" id="btn-notification">
+                    <a href="/logout" class="btn btn-sm btn-danger">
+                        <span class="material-icons">logout</span>
+                        ログアウト
+                    </a>
+                </div>
+                <button class="btn-icon" id="btn-notification">
                         <span class="material-icons">notifications</span>
                         <span class="notification-badge" id="notification-count">0</span>
-                    </button>
+                </button>
                 </div>
             </div>
         </div>
