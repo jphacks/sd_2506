@@ -17,9 +17,9 @@ face_missing_start_time = None
 
 app.secret_key = secrets.token_hex(16)
 
-# 先生専用のID・パスワード（環境変数や設定ファイルで管理することを推奨）
-TEACHER_USERNAME = "teacher_admin"
-TEACHER_PASSWORD = "teacher_pass_2025"
+# 先生専用のID・パスワード
+# TEACHER_USERNAME = "teacher_admin"
+# TEACHER_PASSWORD = "teacher_pass_2025"
 
 # 初期リダイレクト先
 redirect_target = {"url": "http://localhost:5000/index_coolver"}
@@ -180,21 +180,20 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        if username == TEACHER_USERNAME and password == TEACHER_PASSWORD:
-            session['user_type'] = 'teacher'
-            session['username'] = username
+        result = login_process(db_filename, username, password)
 
-            return redirect('/index_teacher', code=302)
-        
-        #生徒ログイン用
-        judgment=login_process(db_filename,username, password)
-        if judgment:
-            user_id, user_name, user_type = judgment
-            session['user_type'] = 'student'
+        if result:
+            user_id, user_name, user_type = result
+
+            session['user_type'] = user_type
             session['user_id'] = user_id
             session['username'] = user_name
-
-            return redirect('/index_coolver', code=302)
+        
+        #ログイン用
+            if user_type == 'teacher':
+                return redirect('/index_teacher', code=302)
+            else:
+                return redirect('/index_coolver', code=302)
         else:
             error_message = "ユーザー名またはパスワードが間違っています"
             
@@ -222,10 +221,8 @@ def signup():
         elif not password or password=="":
             password==False
             return render_template('signup.html', submitted=True,username=username,password=password)
-        
-        #teacher_id,pwとの重複チェック
-        elif username == TEACHER_USERNAME:
-            return render_template('signup.html',submitted=True,username=username,password=password)
+        elif not user_type or user_type=="":
+            return render_template('signup.html', submitted=True,username=username,password=password)
             
         else:
             # user名とパスワードが両方あるかどうか判断する
