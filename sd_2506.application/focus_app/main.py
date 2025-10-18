@@ -1,12 +1,11 @@
 from . import app
-from flask import render_template, request, jsonify,redirect,session
+from flask import render_template, request, jsonify, redirect, session, url_for
 import cv2
 import mediapipe as mp
 import numpy as np
 import time
 import base64
 import sqlite3
-import secrets
 
 mp_face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 drawing = mp.solutions.drawing_utils
@@ -15,11 +14,6 @@ eye_closed_start_time = None
 gaze_away_start_time = None
 face_missing_start_time = None
 
-app.secret_key = secrets.token_hex(16)
-
-# 先生専用のID・パスワード
-# TEACHER_USERNAME = "teacher_admin"
-# TEACHER_PASSWORD = "teacher_pass_2025"
 
 # 初期リダイレクト先
 redirect_target = {"url": "http://localhost:5000/index_coolver"}
@@ -29,26 +23,25 @@ def table_create(db_filename):
     with sqlite3.connect(db_filename) as conn:
         cursor = conn.cursor()
         
-        # ユーザー登録テーブル作成クエリ
+        # テーブル作成クエリ
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                password TEXT NOT NULL,
-                user_type TEXT DEFAULT 'student'
+                password TEXT NOT NULL
             )
         """)
 
 # データベースに挿入(ログイン)
-def database_insert(db_filename,name,password,user_type='student'):
+def database_insert(db_filename,name,password):
     with sqlite3.connect(db_filename) as conn:
         cursor = conn.cursor()
     
         # データの挿入（? プレースホルダでSQLインジェクション対策）
         cursor.execute("""
-            INSERT INTO users (name, password,user_type)
-            VALUES (?, ?, ? )
-        """, (name, password,user_type))
+            INSERT INTO users (name, password)
+            VALUES (?, ?)
+        """, (name, password))
         result = cursor.fetchone()
         return result
 
@@ -60,7 +53,7 @@ def login_process(db_filename,name, password):
 
             # nameとpasswordが一致するレコードを検索
             cursor.execute("""
-                SELECT user_id, name, user_type FROM users
+                SELECT * FROM users
                 WHERE name = ? AND password = ?
             """, (name, password))
 
@@ -82,25 +75,7 @@ def is_registered(db_filename,name):
     conn.close()
     return result is not None
 
-#主キーと名前を取得(teacher)
-def get_teacher_users(db_filename):
-    """
-    user_type='teacher' のユーザー (先生) を取得
-    戻り値: list of tuples (user_id, name)
-    """
-    with sqlite3.connect(db_filename) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT user_id, name
-            FROM users
-            WHERE user_type = 'teacher'
-            ORDER BY name
-        """)
-        teachers = cursor.fetchall()
-    return teachers
 
-
-###集中力判定
 # 目の縦横の長さ
 def calculate_EAR(eye_landmarks):
     A = np.linalg.norm(eye_landmarks[1] - eye_landmarks[5])
@@ -192,31 +167,16 @@ def login():
     
     username=None
     password = None
-    error_message = None
-
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-
-        result = login_process(db_filename, username, password)
-
-        if result:
-            user_id, user_name, user_type = result
-
-            session['user_type'] = user_type
-            session['user_id'] = user_id
-            session['username'] = user_name
+        judgment=login_process(db_filename,username, password)
+        if judgment:
+            session['username'] = username
+            print(session['username'])
+            return redirect(redirect_target["url"], code=302)
         
-        #ログイン用
-            if user_type == 'teacher':
-                return redirect('/index_teacher', code=302)
-            else:
-                return redirect('/index_coolver', code=302)
-        else:
-            error_message = "ユーザー名またはパスワードが間違っています"
-            
-        
-    return render_template("login.html", username=username,password=password,error=error_message)
+    return render_template("login.html", username=username,password=password)
 
 # 新規登録処理
 @app.route('/signup', methods=['GET', 'POST'])
@@ -224,69 +184,46 @@ def signup():
     db_filename = "TEST.db"
     username=None
     password = None
-    user_type = None
-    teachers = get_teacher_users(db_filename)
-
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        user_type = request.form.get("user_type", "student") #デフォルトで生徒
-        # print(username)
-        # print(password)
-
-        if not username or username=="":
+        print(username)
+        print(password)
+        if username=="":
             username==False
-            return render_template('signup.html', submitted=True,username=username,password=password,teachers=teachers)
-        elif not password or password=="":
+            return render_template('signup.html', submitted=True,username=username,password=password)
+        elif password=="":
             password==False
-            return render_template('signup.html', submitted=True,username=username,password=password,teachers=teachers)
-        elif not user_type or user_type=="":
-            return render_template('signup.html', submitted=True,username=username,password=password,teachers=teachers)
-            
+            return render_template('signup.html', submitted=True,username=username,password=password)
         else:
             # user名とパスワードが両方あるかどうか判断する
             judgment1=login_process(db_filename,username, password)
             print(judgment1)
             judgment2=is_registered(db_filename,username)
             print(judgment2)
-            # DB上にuser名とパスワードがない ->新規登録OK
+            # DB上にuser名とパスワードがない
             if judgment1==False and judgment2==False:
-                database_insert(db_filename,username,password,user_type=user_type)
-                # 登録後、自動的にログイン
-                result = login_process(db_filename, username, password)
-                if result:
-                    user_id, user_name, db_user_type = result
-                    session['user_type'] = db_user_type
-                    session['user_id'] = user_id
-                    session['username'] = user_name            
-                    # ユーザータイプに応じてリダイレクト
-                    if db_user_type == 'teacher':
-                        return redirect('/index_teacher', code=302)
-                    else:
-                        return redirect('/index_coolver', code=302)
-                #return redirect(redirect_target["url"], code=302)
-        
-        #return render_template('signup.html', submitted=True,username=username,password=password)
-    return render_template('signup.html', submitted=False,username=username,password=password,teachers=teachers)
+                if 'username' not in session:
+                    session['username'] = username
+                database_insert(db_filename,username,password)
+                return redirect(redirect_target["url"], code=302)
+     
+                
+        return render_template('signup.html', submitted=True,username=username,password=password)
+    return render_template('signup.html', submitted=False,username=username,password=password)
 
-# 3. ログアウト
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/', code=302)
-
-#生徒用ページ
+#ホームページ
 @app.route('/index_coolver', methods=['GET','POST'])
-def index():
-    db_filename = "TEST.db"
+def index_coolver():
+    user = session.get('username')
+    #if user is None:
+     #    return redirect(url_for('login'))
 
-    if 'username' not in session or session.get('user_type') != 'student':
-        return redirect('/', code=302)
-    
+    print(user)
     if request.method == 'POST':
         data = request.json
         if data is None:
-            return jsonify({"error":"invalid json or missing data"}), 400
+            return jsonify({"error":"無効なjsonまたはデータが無い"}), 400
         #print(data)
         image_data = data.get('image')
         imd = decode_base64_image(image_data)
@@ -296,18 +233,5 @@ def index():
         else:
             result = {'focus':'unfocused'}
         return jsonify(result)
-    
-    teachers = get_teacher_users(db_filename)
-    return render_template('index_coolver.html', username=session.get('username'),teachers=teachers)
+    return render_template('index_coolver.html',user=user)
 
-#先生用ページ
-@app.route('/index_teacher')
-def teacher_dashboard():
-    # ログインチェック
-    if 'username' not in session or session.get('user_type') != 'teacher':
-        print("先生権限なし - ログインページへリダイレクト")
-        return redirect('/', code=302)
-    
-    # print(session.get('username'))
-    
-    return render_template('index_teacher.html', username=session.get('username'))
