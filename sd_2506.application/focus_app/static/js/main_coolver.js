@@ -474,17 +474,17 @@ function captureAndSend() {
     })
     .then(response => {
         // レスポンスのContent-Typeを確認
-        // const contentType = response.headers.get('content-type');
+        const contentType = response.headers.get('content-type');
         
-        // if (!contentType || !contentType.includes('application/json')) {
-        //     console.error('サーバーがJSONを返していません:', contentType);
-        //     throw new Error('サーバーエラー: JSON形式ではありません');
-        // }
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('サーバーがJSONを返していません:', contentType);
+            throw new Error('サーバーエラー: JSON形式ではありません');
+        }
         
         // // ステータスコード確認
-        // if (!response.ok) {
-        //     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        // }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
         return response.json();
     })
@@ -513,9 +513,9 @@ function captureAndSend() {
         console.error('分析エラー:', error);
         
         // ネットワークエラーの場合
-        // if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        //     console.error('ネットワークエラー: サーバーに接続できません');
-        // }
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            console.error('ネットワークエラー: サーバーに接続できません');
+        }
     });
 }
 

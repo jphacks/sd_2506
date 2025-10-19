@@ -460,39 +460,42 @@ function showToast(message) {
 
 function startAutoUpdate() {
     updateInterval = setInterval(() => {
+            console.log('定期更新実行');
+
+            fetchStudentsData();
         // ランダムにデータを更新（デモ用）
-        students.forEach(student => {
-            if (Math.random() > 0.7 && student.isOnline) { // 30%の確率で更新
-                // 集中時間をランダムに増加
-                student.focusMinutes += Math.floor(Math.random() * 2);
-                student.unfocusMinutes += Math.floor(Math.random() * 2);
+        // students.forEach(student => {
+        //     if (Math.random() > 0.7 && student.isOnline) { // 30%の確率で更新
+        //         // 集中時間をランダムに増加
+        //         student.focusMinutes += Math.floor(Math.random() * 2);
+        //         student.unfocusMinutes += Math.floor(Math.random() * 2);
                 
-                // 非集中率を再計算
-                const totalMinutes = student.focusMinutes + student.unfocusMinutes;
-                student.unfocusRate = totalMinutes > 0 ? (student.unfocusMinutes / totalMinutes) * 100 : 0;
+        //         // 非集中率を再計算
+        //         const totalMinutes = student.focusMinutes + student.unfocusMinutes;
+        //         student.unfocusRate = totalMinutes > 0 ? (student.unfocusMinutes / totalMinutes) * 100 : 0;
                 
-                // アラート判定
-                const wasAlert = student.needsAlert;
-                student.needsAlert = student.unfocusRate > 25;
+        //         // アラート判定
+        //         const wasAlert = student.needsAlert;
+        //         student.needsAlert = student.unfocusRate > 25;
                 
-                // 新しくアラートが発生した場合は通知
-                if (!wasAlert && student.needsAlert) {
-                    showToast(`${student.name}さんの集中度が低下しています`);
-                }
-            }
-        });
+        //         // 新しくアラートが発生した場合は通知
+        //         if (!wasAlert && student.needsAlert) {
+        //             showToast(`${student.name}さんの集中度が低下しています`);
+        //         }
+        //     }
+        // });
         
         // UI更新
         renderStudentsList();
         updateStatistics();
         
-        // 選択中の生徒の詳細を更新
-        if (selectedStudent) {
-            const updatedStudent = students.find(s => s.id === selectedStudent.id);
-            if (updatedStudent) {
-                selectStudent(updatedStudent);
-            }
-        }
+        // 選択中の生徒の詳細を更新->fetchStudentsData内で自動更新
+        // if (selectedStudent) {
+        //     const updatedStudent = students.find(s => s.id === selectedStudent.id);
+        //     if (updatedStudent) {
+        //         selectStudent(updatedStudent);
+        //     }
+        // }
         
     }, 5000); // 5秒ごと
 }

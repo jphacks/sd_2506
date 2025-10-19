@@ -116,6 +116,60 @@ def get_all_students(db_filename):
             ORDER BY name
         """)
         return cursor.fetchall()
+    
+#アクティブなセッションを取得
+def get_user_active_session(username):
+    db_name = f"{username}.db"
+    try:
+        with sqlite3.connect(db_name) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT session_id, teacher_name, start_time, focus_seconds, unfocus_seconds
+                FROM learning_sessions
+                WHERE is_active = 1
+                ORDER BY start_time DESC
+                LIMIT 1
+            """)
+            row = cursor.fetchone()
+            if row:
+                return {
+                    'session_id': row[0],
+                    'teacher_name': row[1],
+                    'start_time': row[2],
+                    'focus_seconds': row[3],
+                    'unfocus_seconds': row[4]
+                }
+            return None
+    except sqlite3.OperationalError:
+        return None
+    
+#個々の過去の学習履歴を取得
+def get_user_history(username, limit=10):
+    db_name = f"{username}.db"
+    try:
+        with sqlite3.connect(db_name) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT session_id, teacher_name, start_time, end_time, 
+                       focus_seconds, unfocus_seconds, tags, memo
+                FROM learning_sessions
+                WHERE is_active = 0
+                ORDER BY start_time DESC
+                LIMIT ?
+            """, (limit,))
+            return [{
+                'session_id': row[0],
+                'teacher_name': row[1],
+                'start_time': row[2],
+                'end_time': row[3],
+                'focus_seconds': row[4],
+                'unfocus_seconds': row[5],
+                'tags': row[6],
+                'memo': row[7]
+            } for row in cursor.fetchall()]
+    except sqlite3.OperationalError:
+        return []
+
 
 
 ###集中力判定
@@ -349,3 +403,92 @@ def teacher_dashboard():
 
     # print(session.get('username'))
     return render_template('index_teacher.html')
+
+#先生用API
+
+#全生徒の現在の状態を取得"
+@app.route('/api/teacher/students', methods=['GET'])
+def api_teacher_students():
+    if 'username' not in session or session.get('user_type') != 'teacher':
+        return jsonify({"success": False, "error": "権限がありません"}), 403
+    
+    db_filename = "TEST.db"
+    students_list = get_all_students(db_filename)
+    
+    result = []
+    for user_id, username in students_list:
+        active_session = get_user_active_session(username)
+        
+        if active_session:
+            focus_min = active_session['focus_seconds'] // 60
+            unfocus_min = active_session['unfocus_seconds'] // 60
+            total = active_session['focus_seconds'] + active_session['unfocus_seconds']
+            unfocus_rate = (active_session['unfocus_seconds'] / total * 100) if total > 0 else 0
+            
+            result.append({
+                'id': user_id,
+                'name': username,
+                'isOnline': True,
+                'focusMinutes': focus_min,
+                'unfocusMinutes': unfocus_min,
+                'unfocusRate': round(unfocus_rate, 1),
+                'needsAlert': unfocus_rate > 25,
+                'loginTime': active_session['start_time'],
+                'logoutTime': None,
+                'tags': [],
+                'memo': ''
+            })
+        else:
+            result.append({
+                'id': user_id,
+                'name': username,
+                'isOnline': False,
+                'focusMinutes': 0,
+                'unfocusMinutes': 0,
+                'unfocusRate': 0,
+                'needsAlert': False,
+                'loginTime': None,
+                'logoutTime': None,
+                'tags': [],
+                'memo': ''
+            })
+    
+    return jsonify({"success": True, "students": result})
+
+#指定した生徒の履歴を取得
+@app.route('/api/teacher/student-history/<int:student_id>', methods=['GET'])
+def api_teacher_student_history(student_id):
+    if 'username' not in session or session.get('user_type') != 'teacher':
+        return jsonify({"success": False, "error": "権限がありません"}), 403
+    
+    db_filename = "TEST.db"
+    
+    # user_idから生徒名を取得
+    with sqlite3.connect(db_filename) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM users WHERE user_id = ?", (student_id,))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "生徒が見つかりません"}), 404
+        username = row[0]
+    
+    history = get_user_history(username, limit=10)
+    return jsonify({"success": True, "history": history})
+
+#メッセージを送信
+@app.route('/api/teacher/send-message', methods=['POST'])
+def api_teacher_send_message():
+    if 'username' not in session or session.get('user_type') != 'teacher':
+        return jsonify({"success": False, "error": "権限がありません"}), 403
+    
+    data = request.json or {}
+    student_id = data.get('student_id')
+    message = data.get('message')
+    
+    if not student_id or not message:
+        return jsonify({"success": False, "error": "必須項目が不足しています"}), 400
+    
+    # TODO: メッセージ保存処理
+    print(f"メッセージ送信: student_id={student_id}, message={message}")
+    
+    return jsonify({"success": True})
