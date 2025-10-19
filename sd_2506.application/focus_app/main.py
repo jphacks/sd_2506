@@ -130,7 +130,7 @@ def calculate_focus_score(landmarks):
         if eye_closed_start_time is None:
             eye_closed_start_time = time.time()
         duration = time.time() - eye_closed_start_time
-        score -= min(50, int((duration / 10.0) * 50))
+        score -= min(50, int((duration / 3.0) * 50))
     else:
         eye_closed_start_time = None
 
@@ -163,7 +163,7 @@ def gen_frames(frame):
         if face_missing_start_time is None:
             face_missing_start_time = time.time()
         duration = time.time() - face_missing_start_time
-        if duration >= 5.0:
+        if duration >= 3.0:
             score = max(0, score_data["score"] - 50)
         else:
             score = score_data["score"]
