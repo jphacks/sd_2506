@@ -472,9 +472,37 @@ function captureAndSend() {
             image: imageData
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        // レスポンスのContent-Typeを確認
+        // const contentType = response.headers.get('content-type');
+        
+        // if (!contentType || !contentType.includes('application/json')) {
+        //     console.error('サーバーがJSONを返していません:', contentType);
+        //     throw new Error('サーバーエラー: JSON形式ではありません');
+        // }
+        
+        // // ステータスコード確認
+        // if (!response.ok) {
+        //     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // }
+        
+        return response.json();
+    })
     .then(data => {
         console.log('分析結果:', data);
+        
+        // エラーチェック
+        if (data.error) {
+            console.error('サーバーエラー:', data.error);
+            
+            // セッション切れの場合はログインページへ
+            if (data.error.includes('未ログイン') || data.error.includes('権限')) {
+                alert('セッションが切れました。再度ログインしてください。');
+                window.location.href = '/';
+                return;
+            }
+            return;
+        }
         
         // 結果に基づいてUI更新
         if (data.focus) {
@@ -483,6 +511,11 @@ function captureAndSend() {
     })
     .catch(error => {
         console.error('分析エラー:', error);
+        
+        // ネットワークエラーの場合
+        // if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        //     console.error('ネットワークエラー: サーバーに接続できません');
+        // }
     });
 }
 
