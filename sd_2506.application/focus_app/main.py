@@ -215,6 +215,7 @@ def database_user_insert(username,data_time,con_time,no_con_time,lebel,tag,memo)
             VALUES (?, ?, ?, ?,?,?)
         """, (username,data_time, con_time, no_con_time,lebel,tag,memo))
 
+
 # ログイン処理
 @app.route('/', methods=["GET", "POST"])
 def login():
