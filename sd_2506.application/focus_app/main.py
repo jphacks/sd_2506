@@ -391,6 +391,7 @@ def login():
             if user_type == 'teacher':
                 return redirect('/index_teacher', code=302)
             else:
+                database_user_insert(username)
                 return redirect('/index_coolver', code=302)
         else:
             error_message = "ユーザー名またはパスワードが間違っています"
@@ -485,7 +486,7 @@ def index():
                 result = {'focus': 'unfocused'}
             return jsonify(result)
         else:
-            
+
 
     teachers = get_teacher_users(db_filename)
     return render_template('index_coolver.html', username=session.get('username'), teachers=teachers)
