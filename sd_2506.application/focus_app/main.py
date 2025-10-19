@@ -130,7 +130,7 @@ def calculate_focus_score(landmarks):
         if eye_closed_start_time is None:
             eye_closed_start_time = time.time()
         duration = time.time() - eye_closed_start_time
-        score -= min(50, int((duration / 3.0) * 50))
+        score -= min(50, int((duration / 10.0) * 50))
     else:
         eye_closed_start_time = None
 
@@ -163,7 +163,7 @@ def gen_frames(frame):
         if face_missing_start_time is None:
             face_missing_start_time = time.time()
         duration = time.time() - face_missing_start_time
-        if duration >= 3.0:
+        if duration >= 5.0:
             score = max(0, score_data["score"] - 50)
         else:
             score = score_data["score"]
@@ -185,35 +185,6 @@ def decode_base64_image(base64_string):
 
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     return frame
-
-#　user個人のデータベース
-def create_user_db(username):
-    db_name = f"{username}.db"
-    with sqlite3.connect(db_name) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                teacher TEXT NOT NULL,
-                date TEXT,
-                concentration INTEGER,
-                no_concentration INTEGER,
-                tag TEXT NOT NULL,
-                memo TEXT NOT NULL
-                
-            )
-        """)
-        
-# データベースに挿入(user各自)
-def database_user_insert(username,data_time,con_time,no_con_time,lebel,tag,memo):
-    db_name = f"{username}.db"
-    with sqlite3.connect(db_name) as conn:
-        cursor = conn.cursor()
-    
-        cursor.execute("""
-            INSERT INTO activities_log (teacher,date,concentration, no_concentration,tag,memo)
-            VALUES (?, ?, ?, ?,?,?)
-        """, (username,data_time, con_time, no_con_time,lebel,tag,memo))
 
 
 # ログイン処理
@@ -297,13 +268,10 @@ def signup():
                     session['user_type'] = db_user_type
                     session['user_id'] = user_id
                     session['username'] = user_name
-                    
-                    
                     # ユーザータイプに応じてリダイレクト
                     if db_user_type == 'teacher':
                         return redirect('/index_teacher', code=302)
                     else:
-                        create_user_db(username)
                         return redirect('/index_coolver', code=302)
                 # return redirect(redirect_target["url"], code=302)
 
@@ -329,7 +297,7 @@ def index():
     if request.method == 'POST':
         data = request.json
         if data is None:
-            return jsonify({"error": "invalid json or missing data"}), 400
+            return jsonify({"error": "無効なjsonまたは空のデータ"}), 400
         # print(data)
         image_data = data.get('image')
         imd = decode_base64_image(image_data)
@@ -345,13 +313,26 @@ def index():
 
 
 # 先生用ページ
-@app.route('/index_teacher')
+@app.route('/index_teacher', methods=['GET','POST'])
 def teacher_dashboard():
     # ログインチェック
     if 'username' not in session or session.get('user_type') != 'teacher':
         print("先生権限なし - ログインページへリダイレクト")
         return redirect('/', code=302)
 
-    # print(session.get('username'))
+    teacher_name = session.get('username')
 
-    return render_template('index_teacher.html', username=session.get('username'))
+    if request.method == 'POST':
+        """
+        生徒のデータを取り出すSQL
+        with sqlite3.connect as conn:
+            cur = conn.cursor
+            sql = 'SELECT *  FROM 全生徒のテーブル名 WHERE 教師 = teacher_name '
+            cur.execute(sql)
+            student_data = cur.fetchall()
+        print('debug_teacher')
+        return jsonify(student_data)
+        """
+
+    # print(session.get('username'))
+    return render_template('index_teacher.html')
