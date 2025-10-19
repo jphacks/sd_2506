@@ -391,7 +391,7 @@ def login():
             if user_type == 'teacher':
                 return redirect('/index_teacher', code=302)
             else:
-                database_user_insert(username)
+                # database_user_insert(username)
                 return redirect('/index_coolver', code=302)
         else:
             error_message = "ユーザー名またはパスワードが間違っています"
@@ -448,7 +448,7 @@ def signup():
                         return redirect('/index_teacher', code=302)
                     else:
                         create_user_db()
-                        database_user_insert(username)
+                        # database_user_insert(username)
                         return redirect('/index_coolver', code=302)
                 # return redirect(redirect_target["url"], code=302)
 
