@@ -211,9 +211,9 @@ def database_user_insert(username,data_time,con_time,no_con_time,lebel,tag,memo)
         cursor = conn.cursor()
     
         cursor.execute("""
-            INSERT INTO activities_log (date, concentration, no_concentration,lebel,tag,memo)
+            INSERT INTO activities_log (teacher,date,concentration, no_concentration,tag,memo)
             VALUES (?, ?, ?, ?,?,?)
-        """, (data_time, con_time, no_con_time,lebel,tag,memo))
+        """, (username,data_time, con_time, no_con_time,lebel,tag,memo))
 
 # ログイン処理
 @app.route('/', methods=["GET", "POST"])
