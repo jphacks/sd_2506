@@ -88,7 +88,7 @@
                 <label for="session-teacher" class="form-label fw-bold">
                     担当先生を選択
                 </label>
-                <select name="teacher_id" id="teacher-select" class="form-select">
+                <select name="teacher_id" id="session-teacher" class="form-select">
                     <option value="">― 先生なし ―</option>
                     {% for tid, tname in teachers %}
                     <option value="{{ tid }}">{{ tname }}</option>
@@ -100,7 +100,7 @@
             </div>
 
             <!-- メイン画面 -->
-            <div id="main-screen" class="screen　d-none">
+            <div id="main-screen" class="screen d-none">
                 <div class="main-grid">
 
                     <!-- 左エリア：カメラ＆ステータス -->
