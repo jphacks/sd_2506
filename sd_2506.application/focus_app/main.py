@@ -143,7 +143,7 @@ def calculate_focus_score(landmarks):
         if eye_closed_start_time is None:
             eye_closed_start_time = time.time()
         duration = time.time() - eye_closed_start_time
-        score -= min(50, int((duration / 3.0) * 50))
+        score -= min(50, int((duration / 10.0) * 50))
     else:
         eye_closed_start_time = None
 
@@ -176,7 +176,7 @@ def gen_frames(frame):
         if face_missing_start_time is None:
             face_missing_start_time = time.time()
         duration = time.time() - face_missing_start_time
-        if duration >= 3.0:
+        if duration >= 5.0:
             score = max(0, score_data["score"] - 50)
         else:
             score = score_data["score"]
@@ -199,115 +199,6 @@ def decode_base64_image(base64_string):
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     return frame
 
-#　user個人のデータベース
-def create_user_db(username):
-    db_name = f"{username}.db"
-    with sqlite3.connect(db_name) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                session_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                teacher_name TEXT,
-                start_time TEXT NOT NULL,
-                end_time TEXT,
-                focus_seconds INTEGER DEFAULT 0,
-                unfocus_seconds INTEGER DEFAULT 0,
-                tags TEXT,
-                memo TEXT,
-                is_active INTEGER DEFAULT 1
-  
-            )
-        """)
-        conn.commit()
-
-#学習セッション開始
-def start_user_session(username, teacher_name=None):
-    db_name = f"{username}.db"
-    with sqlite3.connect(db_name) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO learning_sessions (teacher_name, start_time, is_active)
-            VALUES (?, ?, 1)
-        """, (teacher_name or "先生なし", datetime.now().isoformat()))
-        conn.commit()
-        return cursor.lastrowid
-    
-def update_user_session(username, session_id, focus_seconds, unfocus_seconds):
-    """セッション更新（リアルタイム）"""
-    db_name = f"{username}.db"
-    with sqlite3.connect(db_name) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE learning_sessions
-            SET focus_seconds = ?, unfocus_seconds = ?
-            WHERE session_id = ?
-        """, (focus_seconds, unfocus_seconds, session_id))
-        conn.commit()
-
-def end_user_session(username, session_id, tags='', memo=''):
-    # セッション終了
-    db_name = f"{username}.db"
-    with sqlite3.connect(db_name) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE learning_sessions
-            SET end_time = ?, tags = ?, memo = ?, is_active = 0
-            WHERE session_id = ?
-        """, (datetime.now().isoformat(), tags, memo, session_id))
-        conn.commit()
-
-def get_user_active_session(username):
-    """アクティブなセッション取得"""
-    db_name = f"{username}.db"
-    try:
-        with sqlite3.connect(db_name) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT session_id, teacher_name, start_time, focus_seconds, unfocus_seconds
-                FROM learning_sessions
-                WHERE is_active = 1
-                ORDER BY start_time DESC
-                LIMIT 1
-            """)
-            row = cursor.fetchone()
-            if row:
-                return {
-                    'session_id': row[0],
-                    'teacher_name': row[1],
-                    'start_time': row[2],
-                    'focus_seconds': row[3],
-                    'unfocus_seconds': row[4]
-                }
-            return None
-    except sqlite3.OperationalError:
-        return None
-
-def get_user_history(username, limit=10):
-    """過去の学習履歴取得"""
-    db_name = f"{username}.db"
-    try:
-        with sqlite3.connect(db_name) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT session_id, teacher_name, start_time, end_time, 
-                       focus_seconds, unfocus_seconds, tags, memo
-                FROM learning_sessions
-                WHERE is_active = 0
-                ORDER BY start_time DESC
-                LIMIT ?
-            """, (limit,))
-            return [{
-                'session_id': row[0],
-                'teacher_name': row[1],
-                'start_time': row[2],
-                'end_time': row[3],
-                'focus_seconds': row[4],
-                'unfocus_seconds': row[5],
-                'tags': row[6],
-                'memo': row[7]
-            } for row in cursor.fetchall()]
-    except sqlite3.OperationalError:
-        return []
 
 # ログイン処理
 @app.route('/', methods=["GET", "POST"])
@@ -366,21 +257,36 @@ def signup():
             username == False
             return render_template('signup.html', submitted=True, username=username, password=password,
                                    teachers=teachers)
-        if not is_registered(db_filename, username):
-            database_insert(db_filename, username, password, user_type)
-            result = login_process(db_filename, username, password)
-            
-            if result:
-                user_id, user_name, db_user_type = result
-                session['user_type'] = db_user_type
-                session['user_id'] = user_id
-                session['username'] = user_name
-                
-                if db_user_type == 'teacher':
-                    return redirect('/index_teacher', code=302)
-                else:
-                    create_user_db(username)
-                    return redirect('/index_coolver', code=302)
+        elif not password or password == "":
+            password == False
+            return render_template('signup.html', submitted=True, username=username, password=password,
+                                   teachers=teachers)
+        elif not user_type or user_type == "":
+            return render_template('signup.html', submitted=True, username=username, password=password,
+                                   teachers=teachers)
+
+        else:
+            # user名とパスワードが両方あるかどうか判断する
+            judgment1 = login_process(db_filename, username, password)
+            print(judgment1)
+            judgment2 = is_registered(db_filename, username)
+            print(judgment2)
+            # DB上にuser名とパスワードがない ->新規登録OK
+            if judgment1 == False and judgment2 == False:
+                database_insert(db_filename, username, password, user_type=user_type)
+                # 登録後、自動的にログイン
+                result = login_process(db_filename, username, password)
+                if result:
+                    user_id, user_name, db_user_type = result
+                    session['user_type'] = db_user_type
+                    session['user_id'] = user_id
+                    session['username'] = user_name
+                    # ユーザータイプに応じてリダイレクト
+                    if db_user_type == 'teacher':
+                        return redirect('/index_teacher', code=302)
+                    else:
+                        return redirect('/index_coolver', code=302)
+                # return redirect(redirect_target["url"], code=302)
 
         # return render_template('signup.html', submitted=True,username=username,password=password)
     return render_template('signup.html', submitted=False, username=username, password=password, teachers=teachers)
@@ -404,7 +310,7 @@ def index():
     if request.method == 'POST':
         data = request.json
         if data is None:
-            return jsonify({"error": "invalid json or missing data"}), 400
+            return jsonify({"error": "無効なjsonまたは空のデータ"}), 400
         # print(data)
         image_data = data.get('image')
         imd = decode_base64_image(image_data)
@@ -420,92 +326,26 @@ def index():
 
 
 # 先生用ページ
-@app.route('/index_teacher')
+@app.route('/index_teacher', methods=['GET','POST'])
 def teacher_dashboard():
     # ログインチェック
     if 'username' not in session or session.get('user_type') != 'teacher':
         print("先生権限なし - ログインページへリダイレクト")
         return redirect('/', code=302)
 
+    teacher_name = session.get('username')
+
+    if request.method == 'POST':
+        """
+        生徒のデータを取り出すSQL
+        with sqlite3.connect as conn:
+            cur = conn.cursor
+            sql = 'SELECT *  FROM 全生徒のテーブル名 WHERE 教師 = teacher_name '
+            cur.execute(sql)
+            student_data = cur.fetchall()
+        print('debug_teacher')
+        return jsonify(student_data)
+        """
+
     # print(session.get('username'))
-
-    return render_template('index_teacher.html', username=session.get('username'))
-
-#生徒データ表示用API
-@app.route('/api/teacher/students', methods=['GET'])
-def api_teacher_students():
-    #全生徒の現在の状態を取得
-    db_filename = "TEST.db"
-    students_list = get_all_students(db_filename)
-    
-    result = []
-    for user_id, username in students_list:
-        active_session = get_user_active_session(username)
-        
-        if active_session:
-            focus_min = active_session['focus_seconds'] // 60
-            unfocus_min = active_session['unfocus_seconds'] // 60
-            total = active_session['focus_seconds'] + active_session['unfocus_seconds']
-            unfocus_rate = (active_session['unfocus_seconds'] / total * 100) if total > 0 else 0
-            
-            result.append({
-                'id': user_id,
-                'name': username,
-                'isOnline': True,
-                'focusMinutes': focus_min,
-                'unfocusMinutes': unfocus_min,
-                'unfocusRate': round(unfocus_rate, 1),
-                'needsAlert': unfocus_rate > 25,
-                'loginTime': active_session['start_time'],
-                'logoutTime': None,
-                'tags': [],  
-                'memo': ''   
-            })
-        else:
-            result.append({
-                'id': user_id,
-                'name': username,
-                'isOnline': False,
-                'focusMinutes': 0,
-                'unfocusMinutes': 0,
-                'unfocusRate': 0,
-                'needsAlert': False,
-                'loginTime': None,
-                'logoutTime': None,
-                'tags': [],  
-                'memo': '' 
-            })
-    
-    return jsonify({"success": True, "students": result})
-
-@app.route('/api/teacher/student-history/<int:student_id>', methods=['GET'])
-def api_teacher_student_history(student_id):
-    #指定生徒の履歴を取得
-    db_filename = "TEST.db"
-    
-    # user_idから生徒名を取得
-    with sqlite3.connect(db_filename) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM users WHERE user_id = ?", (student_id,))
-        row = cursor.fetchone()
-        if not row:
-            return jsonify({"success": False, "error": "生徒が見つかりません"}), 404
-        username = row[0]
-    
-    history = get_user_history(username, limit=10)
-    return jsonify({"success": True, "history": history})
-
-@app.route('/api/teacher/send-message', methods=['POST'])
-def api_teacher_send_message():
-    #メッセージ送信（TODO: 実装
-    data = request.json or {}
-    student_id = data.get('student_id')
-    message = data.get('message')
-    
-    if not student_id or not message:
-        return jsonify({"success": False, "error": "必須項目が不足しています"}), 400
-    
-    # TODO: メッセージ保存処理
-    print(f"メッセージ送信: student_id={student_id}, message={message}")
-    
-    return jsonify({"success": True})
+    return render_template('index_teacher.html')
