@@ -41,6 +41,26 @@ def table_create(db_filename):
             )
         """)
 
+#生徒個別のDB作成
+def create_user_db(username):
+    db_name = f"{username}.db"
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS learning_sessions (
+                session_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                teacher_name TEXT,
+                start_time TEXT NOT NULL,
+                end_time TEXT,
+                focus_seconds INTEGER DEFAULT 0,
+                unfocus_seconds INTEGER DEFAULT 0,
+                tags TEXT,
+                memo TEXT,
+                is_active INTEGER DEFAULT 1
+            )
+        """)
+        conn.commit()
+
 
 # データベースに挿入(ログイン)
 def database_insert(db_filename, name, password, user_type='student'):
@@ -142,6 +162,42 @@ def get_user_active_session(username):
             return None
     except sqlite3.OperationalError:
         return None
+
+def start_user_session(username, teacher_name=None):
+    #学習セッション開始
+    db_name = f"{username}.db"
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO learning_sessions (teacher_name, start_time, is_active)
+            VALUES (?, ?, 1)
+        """, (teacher_name or "先生なし", datetime.now().isoformat()))
+        conn.commit()
+        return cursor.lastrowid
+
+def update_user_session(username, session_id, focus_seconds, unfocus_seconds):
+    #セッション更新（リアルタイム）
+    db_name = f"{username}.db"
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE learning_sessions
+            SET focus_seconds = ?, unfocus_seconds = ?
+            WHERE session_id = ?
+        """, (focus_seconds, unfocus_seconds, session_id))
+        conn.commit()
+
+def end_user_session(username, session_id, tags='', memo=''):
+    # セッション終了
+    db_name = f"{username}.db"
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE learning_sessions
+            SET end_time = ?, tags = ?, memo = ?, is_active = 0
+            WHERE session_id = ?
+        """, (datetime.now().isoformat(), tags, memo, session_id))
+        conn.commit()
     
 #個々の過去の学習履歴を取得
 def get_user_history(username, limit=10):
@@ -492,3 +548,70 @@ def api_teacher_send_message():
     print(f"メッセージ送信: student_id={student_id}, message={message}")
     
     return jsonify({"success": True})
+
+# セッション管理
+@app.route('/api/start-session', methods=['POST'])
+def api_start_session():
+    """セッション開始"""
+    if 'username' not in session or session.get('user_type') != 'student':
+        return jsonify({"success": False, "error": "未ログインまたは権限がありません"}), 401
+    
+    data = request.json or {}
+    teacher_id = data.get('teacher_id')
+    teacher_name = data.get('teacher_name', '先生なし')
+    start_time = data.get('start_time')
+    
+    username = session.get('username')
+    
+    # 生徒個別DBにセッション開始記録
+    session_id = start_user_session(username, teacher_name)
+    
+    # Flaskセッションに保存
+    session['current_session_id'] = session_id
+    session['session_start_time'] = start_time
+    
+    print(f"セッション開始: {username} → 先生: {teacher_name} (session_id: {session_id})")
+    
+    return jsonify({
+        "success": True,
+        "session_id": session_id,
+        "message": "セッション開始しました"
+    })
+
+#セッション終了（記録保存）
+@app.route('/api/end-session', methods=['POST'])
+def api_end_session():
+    if 'username' not in session or session.get('user_type') != 'student':
+        return jsonify({"success": False, "error": "未ログインまたは権限がありません"}), 401
+    
+    data = request.json or {}
+    teacher_name = data.get('teacher_name', '先生なし')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
+    focus_seconds = data.get('focus_seconds', 0)
+    unfocus_seconds = data.get('unfocus_seconds', 0)
+    tags = data.get('tags', '')
+    memo = data.get('memo', '')
+    
+    username = session.get('username')
+    session_id = session.get('current_session_id')
+    
+    if session_id:
+        # 既存のセッションを更新
+        end_user_session(username, session_id, tags, memo)
+        # 集中時間も更新
+        update_user_session(username, session_id, focus_seconds, unfocus_seconds)
+        session.pop('current_session_id', None)
+    else:
+        # 新規セッションとして保存
+        session_id = start_user_session(username, teacher_name)
+        update_user_session(username, session_id, focus_seconds, unfocus_seconds)
+        end_user_session(username, session_id, tags, memo)
+    
+    print(f"セッション終了: {username} (session_id: {session_id})")
+    print(f"   集中: {focus_seconds}秒, 非集中: {unfocus_seconds}秒")
+    
+    return jsonify({
+        "success": True,
+        "message": "セッションを保存しました"
+    })

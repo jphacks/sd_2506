@@ -1,6 +1,8 @@
 // グローバル変数
 let cameraStream = null;
 let cameraOn = false;
+let analysisInterval = null;
+
 let focusSeconds = 0;
 let unfocusSeconds = 0;
 let lastFocus = true;
@@ -9,7 +11,9 @@ let currentScore = 100;
 let sessionTags = "";
 let sessionMemo = "";
 let sessionTeacherId = null;
-let analysisInterval = null;
+let sessionTeacherName = null;
+let sessionStartTime = null;
+
 let timerInterval = null;
 let audioUnlocked = false;
 let pendingBGM = false;
@@ -193,23 +197,46 @@ document.addEventListener('DOMContentLoaded', function() {
   sessionSetup.classList.remove('d-none');
   mainScreen.classList.add('d-none');
 
-  startBtn.onclick = function() {
-    // セッション設定画面を非表示
-    sessionSetup.classList.add('d-none');
-    // メイン画面を表示
-    mainScreen.classList.remove('d-none');
+    if (startBtn) {
+        startBtn.onclick = function() {
 
-    // 以降、メイン画面用の初期化処理
-    setupEventListeners();
-    startCamera();
-    startFocusTimer();
-    showScreen('main-screen');
-    // オーディオアンロック
-    // document.body.addEventListener('click', unlockAudio, { once: true });
-    // document.body.addEventListener('touchstart', unlockAudio, { once: true });
-    // document.addEventListener('click', initAudioContext, { once: true });
-    // document.addEventListener('touchstart', initAudioContext, { once: true });
-  };
+            sessionSetup.classList.add('d-none');
+            mainScreen.classList.remove('d-none');
+            // 先生IDと名前を取得
+            const teacherSelect = document.getElementById('session-teacher');
+            sessionTeacherId = teacherSelect.value || null;
+            sessionTeacherName = teacherSelect.options[teacherSelect.selectedIndex].text;
+            sessionStartTime = new Date().toISOString();
+
+            console.log(`セッション開始: 担当先生=${sessionTeacherName} (ID: ${sessionTeacherId})`);
+
+            // セッション開始をバックエンドに通知
+            fetch('/api/start-session', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    teacher_id: sessionTeacherId,
+                    teacher_name: sessionTeacherName,
+                    start_time: sessionStartTime
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('セッション開始成功:', data);
+                } else {
+                    console.error('セッション開始エラー:', data.error);
+                }
+            })
+            .catch(err => console.error('APIエラー:', err));
+
+            // 初期化処理
+            setupEventListeners();
+            startCamera();
+            startFocusTimer();
+            showScreen('main-screen');
+        };
+    }
 });
 
 function setupEventListeners() {
@@ -353,6 +380,18 @@ function setupEventListeners() {
         checkNotificationPermission();
         updateNotificationUI(Notification.permission);
     }, 1000);
+
+    // ログアウトボタン
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+        logoutBtn.onclick = function() {
+            // 確認ダイアログ
+            if (confirm('学習を終了してログアウトしますか？\n（記録は保存されます）')) {
+                // セッションを自動保存
+                saveSessionAndLogout();
+            }
+        };
+    }
 }
 
 
@@ -755,6 +794,7 @@ function formatTime(sec) {
 }
 
 // セッション記録
+// ログアウト時にバックエンドへ送信
 function saveSessionUI() {
     const sanitizeInput = (input) => {
         if (!input) return '';
@@ -769,14 +809,55 @@ function saveSessionUI() {
     sessionTags = tagsInput ? sanitizeInput(tagsInput.value) : '';
     sessionMemo = memoInput ? sanitizeInput(memoInput.value) : '';
     
+    const sessionData = {
+        teacher_name: sessionTeacherName || '先生なし',
+        start_time: sessionStartTime,
+        end_time: new Date().toISOString(),
+        focus_seconds: focusSeconds,
+        unfocus_seconds: unfocusSeconds,
+        tags: sessionTags,
+        memo: sessionMemo
+    };
+    
+    // バックエンドに送信
+    fetch('/api/end-session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(sessionData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            console.log('セッション保存成功');
+            alert("記録しました！");
+            
+            // 入力欄クリア
+            if (tagsInput) tagsInput.value = '';
+            if (memoInput) memoInput.value = '';
+            
+            // ローカルストレージにも保存（オプション）
+            saveToLocalStorage(sessionData);
+        } else {
+            console.error('セッション保存エラー:', data.error);
+            alert('記録に失敗しました: ' + data.error);
+        }
+    })
+    .catch(err => {
+        console.error('APIエラー:', err);
+        alert('記録に失敗しました');
+    });
+}
+// ローカルストレージにも保存（バックアップ）
+function saveToLocalStorage(sessionData) {
     const log = {
-        date: new Date().toISOString(),
-        focus: focusSeconds,
-        unfocus: unfocusSeconds,
+        date: sessionData.end_time,
+        focus: sessionData.focus_seconds,
+        unfocus: sessionData.unfocus_seconds,
         growth: growthLevel,
         score: currentScore,
-        tags: sessionTags.split(',').map(s => s.trim()).filter(s=>s),
-        memo: sessionMemo
+        tags: sessionData.tags.split(',').map(s => s.trim()).filter(s => s),
+        memo: sessionData.memo,
+        teacher: sessionData.teacher_name
     };
     
     let logs = [];
@@ -789,14 +870,36 @@ function saveSessionUI() {
     
     logs.push(log);
     localStorage.setItem('focusLogs', JSON.stringify(logs));
-    
-    alert("記録しました！");
-    if (tagsInput) tagsInput.value = '';
-    if (memoInput) memoInput.value = '';
-    
-    console.log('セッション保存:', log);
 }
-
+// セッション保存後にログアウト
+function saveSessionAndLogout() {
+    const sessionData = {
+        teacher_name: sessionTeacherName || '先生なし',
+        start_time: sessionStartTime,
+        end_time: new Date().toISOString(),
+        focus_seconds: focusSeconds,
+        unfocus_seconds: unfocusSeconds,
+        tags: sessionTags,
+        memo: sessionMemo
+    };
+    
+    fetch('/api/end-session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(sessionData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log('セッション自動保存完了');
+        // ログアウトページへ遷移
+        window.location.href = '/logout';
+    })
+    .catch(err => {
+        console.error('セッション保存エラー:', err);
+        // エラーでもログアウトは実行
+        window.location.href = '/logout';
+    });
+}
 
 // 履歴表示
 function renderFocusHistory() {
