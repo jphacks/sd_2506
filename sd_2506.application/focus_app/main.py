@@ -192,7 +192,7 @@ def create_user_db(username):
     with sqlite3.connect(db_name) as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS activities_log (
+            CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 teacher TEXT NOT NULL,
                 date TEXT PRIMARY KEY,
