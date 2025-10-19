@@ -473,19 +473,18 @@ def index():
 
     if request.method == 'POST':
         data = request.json
+        
         if data is None:
             return jsonify({"error": "無効なjsonまたは空のデータ"}), 400
         # print(data)
-        if data['image']:
-            image_data = data.get('image')
-            imd = decode_base64_image(image_data)
-            gen_frames(imd)
-            if score_data['score'] >= 60:
-                result = {'focus': 'focused'}
-            else:
-                result = {'focus': 'unfocused'}
-            return jsonify(result)
+        image_data = data.get('image')
+        imd = decode_base64_image(image_data)
+        gen_frames(imd)
+        if score_data['score'] >= 60:
+            result = {'focus': 'focused'}
         else:
+            result = {'focus': 'unfocused'}
+        return jsonify(result)
 
 
     teachers = get_teacher_users(db_filename)
