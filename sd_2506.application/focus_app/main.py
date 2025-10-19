@@ -195,7 +195,7 @@ def create_user_db(username):
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 teacher TEXT NOT NULL,
-                date TEXT PRIMARY KEY,
+                date TEXT,
                 concentration INTEGER,
                 no_concentration INTEGER,
                 tag TEXT NOT NULL,
