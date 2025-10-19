@@ -391,6 +391,7 @@ def login():
             if user_type == 'teacher':
                 return redirect('/index_teacher', code=302)
             else:
+                database_user_insert(username)
                 return redirect('/index_coolver', code=302)
         else:
             error_message = "ユーザー名またはパスワードが間違っています"
@@ -475,14 +476,17 @@ def index():
         if data is None:
             return jsonify({"error": "無効なjsonまたは空のデータ"}), 400
         # print(data)
-        image_data = data.get('image')
-        imd = decode_base64_image(image_data)
-        gen_frames(imd)
-        if score_data['score'] >= 60:
-            result = {'focus': 'focused'}
+        if data['image']:
+            image_data = data.get('image')
+            imd = decode_base64_image(image_data)
+            gen_frames(imd)
+            if score_data['score'] >= 60:
+                result = {'focus': 'focused'}
+            else:
+                result = {'focus': 'unfocused'}
+            return jsonify(result)
         else:
-            result = {'focus': 'unfocused'}
-        return jsonify(result)
+
 
     teachers = get_teacher_users(db_filename)
     return render_template('index_coolver.html', username=session.get('username'), teachers=teachers)
