@@ -34,14 +34,14 @@
 #### API・データ
 
 #### フレームワーク・ライブラリ・モジュール
-・Flask : 動的なwebアプリケーション構築に利用  
-・sqlite3	: データベースに利用  
-・cv2	: 画像処理に利用  
+・Flask :     動的なwebアプリケーション構築に利用  
+・sqlite3	:   データベースに利用  
+・cv2	:       画像処理に利用  
 ・mediapipe	: 顔の特徴点検出に利用  
-・time : 時間の取得に利用  
-・numpy : mediapipeのデータ形式に利用  
-・base64 : jsonとnumpy配列の変換に利用  
-・secrets  : セッションIDの生成に利用  
+・time :      時間の取得に利用  
+・numpy :     mediapipeのデータ形式に利用  
+・base64 :    jsonとnumpy配列の変換に利用  
+・secrets  :  セッションIDの生成に利用  
 
 #### デバイス
 ・pc
