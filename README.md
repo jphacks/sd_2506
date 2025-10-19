@@ -1,6 +1,6 @@
 # ホジョリンク
 
-[![IMAGE ALT TEXT HERE](/image3.jpg)](https://www.youtube.com/watch?v=lA9EluZugD8)
+[![IMAGE ALT TEXT HERE](<img width="340" height="340" alt="Image" src="https://github.com/user-attachments/assets/22538546-1797-4723-8379-06d9e5d0d0ca" />)](https://www.youtube.com/watch?v=lA9EluZugD8)
 
 ## 製品概要
 ・ホジョリンク
