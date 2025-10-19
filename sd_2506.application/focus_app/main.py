@@ -186,6 +186,35 @@ def decode_base64_image(base64_string):
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
     return frame
 
+#　user個人のデータベース
+def create_user_db(username):
+    db_name = f"{username}.db"
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS activities_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                teacher TEXT NOT NULL,
+                date TEXT PRIMARY KEY,
+                concentration INTEGER,
+                no_concentration INTEGER,
+                lebel INTEGER,
+                tag TEXT NOT NULL,
+                memo TEXT NOT NULL
+                
+            )
+        """)
+        
+# データベースに挿入(user各自)
+def database_user_insert(username,data_time,con_time,no_con_time,lebel,tag,memo):
+    db_name = f"{username}.db"
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+    
+        cursor.execute("""
+            INSERT INTO activities_log (date, concentration, no_concentration,lebel,tag,memo)
+            VALUES (?, ?, ?, ?,?,?)
+        """, (data_time, con_time, no_con_time,lebel,tag,memo))
 
 # ログイン処理
 @app.route('/', methods=["GET", "POST"])
@@ -268,10 +297,13 @@ def signup():
                     session['user_type'] = db_user_type
                     session['user_id'] = user_id
                     session['username'] = user_name
+                    
+                    
                     # ユーザータイプに応じてリダイレクト
                     if db_user_type == 'teacher':
                         return redirect('/index_teacher', code=302)
                     else:
+                        create_user_db(username)
                         return redirect('/index_coolver', code=302)
                 # return redirect(redirect_target["url"], code=302)
 
