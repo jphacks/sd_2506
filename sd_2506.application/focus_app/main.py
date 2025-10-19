@@ -198,7 +198,6 @@ def create_user_db(username):
                 date TEXT PRIMARY KEY,
                 concentration INTEGER,
                 no_concentration INTEGER,
-                lebel INTEGER,
                 tag TEXT NOT NULL,
                 memo TEXT NOT NULL
                 
