@@ -30,16 +30,20 @@
 
 ### 活用した技術
 ・顔の特徴点を検出する技術MediaPipe
-・ウェブ開発(HTML、CSS、js)
+・web開発(HTML、CSS、javascript)
 ・Python
-・db,json
 
 #### API・データ
-・sqlite3(db)
 
 #### フレームワーク・ライブラリ・モジュール
-・Flask
-・cv2
+・Flask : 動的なwebアプリケーション構築に利用
+・sqlite3	: データベースに利用
+・cv2	: 画像処理に利用
+・mediapipe	: 顔の特徴検出に利用
+・time : 時間の取得に利用
+・numpy : mediapipeデータ形式に利用
+・base64 : jsonとnumpy配列の変換に利用
+・secrets  : セッションIDの生成に利用
 
 #### デバイス
 ・pc
