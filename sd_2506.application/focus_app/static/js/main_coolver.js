@@ -427,7 +427,6 @@ function updateGrowthProgress() {
 }
 
 // 画像キャプチャ→分析
-//デモ用：30%の確率で状態変更 (440~)//
 function captureAndSend() {
     // カメラがOFFの場合は何もしない
     if (!cameraOn) {
@@ -444,14 +443,47 @@ function captureAndSend() {
     console.log('キャプチャ実行中');
     
     // デモ用：30%の確率で状態変更
-    if (Math.random() > 0.7) {
-        const demoResult = {
-            focus: Math.random() > 0.5 ? 'focused' : 'unfocused',
-            confidence: Math.random()
-        };
-        console.log('デモ用状態変更:', demoResult);
-        updateFocusStatus(demoResult);
-    }
+    // if (Math.random() > 0.7) {
+    //     const demoResult = {
+    //         focus: Math.random() > 0.5 ? 'focused' : 'unfocused',
+    //         confidence: Math.random()
+    //     };
+    //     console.log('デモ用状態変更:', demoResult);
+    //     updateFocusStatus(demoResult);
+    // }
+
+    // キャンバスに動画フレームを描画
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Base64エンコード
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Flaskバックエンドに送信
+    fetch('/index_coolver', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            image: imageData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('分析結果:', data);
+        
+        // 結果に基づいてUI更新
+        if (data.focus) {
+            updateFocusStatus({ focus: data.focus });
+        }
+    })
+    .catch(error => {
+        console.error('分析エラー:', error);
+    });
 }
 
 
