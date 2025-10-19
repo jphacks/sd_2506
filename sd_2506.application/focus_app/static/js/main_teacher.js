@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Teacher Dashboard loaded');
     
     // 生徒データ取得
-    fetchStudentsData();
+    // fetchStudentsData();
+    // ダミーデータ生成
+    generateDummyStudents();
     
     // 初期表示
     renderStudentsList();
@@ -24,51 +26,83 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-// // ダミーデータ生成
-// function generateDummyStudents() {
-//     const names = [
-//         { name:'A', id: 'S001' },
-//         { name:'B', id: 'S002' },
-//         { name:'C', id: 'S003' },
-//         { name:'D', id: 'S004' },
-//         { name:'E', id: 'S005' },
-//         { name:'F', id: 'S006' }
-//     ];
+// ダミーデータ生成
+function generateDummyStudents() {
+    const names = [
+        { name: 'student001', id: 'S001' },
+        { name: 'student002', id: 'S002' },
+        { name: 'student003', id: 'S003' },
+        { name: 'student004', id: 'S004' },
+        { name: 'student005', id: 'S005' },
+        { name: 'student006', id: 'S006' }
+    ];
     
-//     const now = new Date();
+    const now = new Date();
     
-//     students = names.map((name, index) => {
-//         const isOnline = Math.random() > 0.2; // 80%がオンライン
-//         const focusMinutes = Math.floor(Math.random() * 40) + 10; // 10-50分
-//         const unfocusMinutes = Math.floor(Math.random() * 20); // 0-20分
-//         const totalMinutes = focusMinutes + unfocusMinutes;
-//         const unfocusRate = totalMinutes > 0 ? (unfocusMinutes / totalMinutes) * 100 : 0;
+    students = names.map((student, index) => {
+        // student001は必ずオンラインにする
+        const isOnline = (student.name === 'student001');
+        const focusMinutes = Math.floor(Math.random() * 40) + 10; // 10-50分
+        const unfocusMinutes = Math.floor(Math.random() * 20); // 0-20分
+        const totalMinutes = focusMinutes + unfocusMinutes;
+        const unfocusRate = totalMinutes > 0 ? (unfocusMinutes / totalMinutes) * 100 : 0;
         
-//         // ログイン時刻（30分〜120分前）
-//         const loginTime = new Date(now.getTime() - (Math.random() * 90 + 30) * 60 * 1000);
+        // ログイン時刻（30分〜120分前）
+        const loginTime = new Date(now.getTime() - (Math.random() * 90 + 30) * 60 * 1000);
         
-//         // ログアウト時刻（オフラインの場合のみ）
-//         const logoutTime = !isOnline ? new Date(now.getTime() - Math.random() * 30 * 60 * 1000) : null;
+        // ログアウト時刻（オフラインの場合のみ）
+        const logoutTime = !isOnline ? new Date(now.getTime() - Math.random() * 30 * 60 * 1000) : null;
         
-//         // タグ生成
-//         const allTags = ['#あいう', '#えおか', '#きくけ', '#こさし', '#すせそ', '#たちつ'];
-//         const tagCount = Math.floor(Math.random() * 3) + 1;
-//         const tags = [];
-//         for (let i = 0; i < tagCount; i++) {
-//             const randomTag = allTags[Math.floor(Math.random() * allTags.length)];
-//             if (!tags.includes(randomTag)) tags.push(randomTag);
-//         }
+        // タグ生成
+        const allTags = ['#数学', '#英語', '#理科', '#社会', '#国語', '#体育'];
+        const tagCount = Math.floor(Math.random() * 3) + 1;
+        const tags = [];
+        for (let i = 0; i < tagCount; i++) {
+            const randomTag = allTags[Math.floor(Math.random() * allTags.length)];
+            if (!tags.includes(randomTag)) tags.push(randomTag);
+        }
         
-//         // メモ生成
-//         const memos = [
-//             'メモだよん',
-//             'メモなのだ',
-//             'メモですわ',
-//             'メモなの',
-//             'メモです',
-//             'メモだす'
-//         ];
-//         const memo = memos[Math.floor(Math.random() * memos.length)];
+        // メモ生成
+        const memos = [
+            '集中して取り組んでいます',
+            '最近よく頑張っています',
+            '復習が必要かもしれません',
+            '順調に進んでいます',
+            '積極的に学習しています',
+            '少し気になる点があります'
+        ];
+        const memo = memos[Math.floor(Math.random() * memos.length)];
+        
+        // 過去のセッション履歴生成
+        const history = [];
+        for (let i = 1; i <= 5; i++) {
+            const historyDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+            const histFocus = Math.floor(Math.random() * 40) + 10;
+            const histUnfocus = Math.floor(Math.random() * 15);
+            history.push({
+                start_time: historyDate.toISOString(),
+                focus_seconds: histFocus * 60,
+                unfocus_seconds: histUnfocus * 60,
+                tags: tags.slice(0, Math.floor(Math.random() * 2) + 1)
+            });
+        }
+        
+        return {
+            id: student.id,
+            name: student.name,
+            isOnline: isOnline,
+            loginTime: loginTime.toISOString(),
+            logoutTime: logoutTime ? logoutTime.toISOString() : null,
+            focusMinutes: focusMinutes,
+            unfocusMinutes: unfocusMinutes,
+            unfocusRate: unfocusRate,
+            needsAlert: unfocusRate > 25, // 25%超えたらアラート
+            tags: tags,
+            memo: memo,
+            history: history
+        };
+    });
+}
         
 //         // 過去のセッション履歴生成
 //         const history = [];
@@ -100,8 +134,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // }
 
 
-// 生徒データ取得
+// 生徒データ取得（ダミーデータ使用版）
 function fetchStudentsData() {
+    // ダミーデータを使用する場合は何もしない
+    // 実際のAPIを使用する場合は以下をコメント解除
+    /*
     fetch('/api/teacher/students')
         .then(res => res.json())
         .then(data => {
@@ -118,7 +155,10 @@ function fetchStudentsData() {
             }
         })
         .catch(err => console.error('APIエラー:', err));
+    */
+    console.log('ダミーデータを使用中');
 }
+
 
 // 生徒リスト表示
 function renderStudentsList() {
@@ -134,6 +174,7 @@ function renderStudentsList() {
         listEl.appendChild(card);
     });
 }
+
 
 function createStudentCard(student) {
     const card = document.createElement('div');
@@ -175,8 +216,18 @@ function createStudentCard(student) {
     return card;
 }
 
-// 選択した生徒の情報
+// 選択した生徒の履歴情報（ダミーデータ使用版）
 function fetchStudentHistory(studentId) {
+    // ダミーデータから履歴を取得
+    const student = students.find(s => s.id === studentId);
+    if (student && student.history) {
+        renderStudentHistory(student.history);
+    } else {
+        renderStudentHistory([]);
+    }
+    
+    // 実際のAPIを使用する場合は以下をコメント解除
+    /*
     fetch(`/api/teacher/student-history/${studentId}`)
         .then(res => res.json())
         .then(data => {
@@ -191,6 +242,7 @@ function fetchStudentHistory(studentId) {
             console.error('APIエラー:', err);
             renderStudentHistory([]);
         });
+    */
 }
 
 // 統計更新
