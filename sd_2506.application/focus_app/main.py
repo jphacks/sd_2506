@@ -1,5 +1,6 @@
 from . import app
 from flask import render_template, request, jsonify, redirect, session
+from datetime import datetime, date
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -254,6 +255,56 @@ def decode_base64_image(base64_string):
     return frame
 
 
+#　全体のデータベース
+def create_user_db():
+    db_name = "all.db"
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date_time TEXT NOT NULL,
+                username TEXT NOT NULL,
+                teacher TEXT ,
+                login_time TEXT ,
+                logout_time TEXT ,
+                con_time INTEGER,
+                no_con_time INTEGER,
+                tag TEXT,
+                memo TEXT
+                
+            )
+        """)
+        
+# 全体のデータベースに挿入(login時)
+def database_user_insert(username):
+    db_name = "all.db"
+    t = datetime.now()
+    login_time = t.strftime("%H:%M:%S")
+    d = date.today()
+    date_time = d.strftime("%Y-%m-%d")
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+    
+        cursor.execute("""
+            INSERT INTO users (date_time,username,login_time)
+            VALUES (?, ?, ?)
+        """, (date_time,username, login_time))
+
+# 全体のデータベース更新
+def database_user_update(username,teacher,con_time,no_con_time):
+    db_name = "all.db"
+    d = date.today()
+    date_time = d.strftime("%Y-%m-%d")
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE users
+            SET teacher=?,con_time = ?,no_con_time=?
+            WHERE date_time = ? AND username = ? AND log_out = ?
+        """, (teacher,con_time, no_con_time,date_time,username, ""))
+        
+        
 # ログイン処理
 @app.route('/', methods=["GET", "POST"])
 def login():
@@ -339,6 +390,8 @@ def signup():
                     if db_user_type == 'teacher':
                         return redirect('/index_teacher', code=302)
                     else:
+                        create_user_db()
+                        database_user_insert(username)
                         return redirect('/index_coolver', code=302)
                 # return redirect(redirect_target["url"], code=302)
 
